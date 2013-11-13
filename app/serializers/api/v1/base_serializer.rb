@@ -1,7 +1,7 @@
 # Default serialization configuration
 
 class Api::V1::BaseSerializer < Xibit::Serializer
-  camelize :lower
+  # camelize :lower
   
   # Configuration
   

@@ -1,24 +1,29 @@
 class Api::V1::UsersController < Api::V1::BaseController
-  before_action :load_user, :only => :create 
-  load_and_authorize_resource :except => :show_current_user
+  before_action :load_user, :except => [:index, :show_current_user, :create]
 
   def index
-    render :json => @users
+    authorize User
+    render :json => User.all
   end
   
   def show
+    authorize @user
     render :json => @user
   end
   
   def show_current_user
+    authorize current_user
     render :json => current_user
   end  
   
   def create
+    @user = User.new
+    authorize @user
+    
     requires_verification = EmailVerification.service_active? && !@user.verified
     @user.verified = true unless requires_verification
      
-    if @user.save
+    if @user.update_attributes permitted_params
       EmailVerification.new(@user).send_instructions if requires_verification
       render :json => @user, :status => :created  
     else
@@ -27,9 +32,8 @@ class Api::V1::UsersController < Api::V1::BaseController
   end
   
   def update
-    @user.assign_attributes user_params
-    restrict_attributes_for_update!
-    if @user.save
+    authorize @user
+    if @user.update_attributes permitted_params
       render :json => @user, :status => :ok
     else
       error!(:invalid_resource, @user.errors, "User has not been updated")
@@ -37,32 +41,19 @@ class Api::V1::UsersController < Api::V1::BaseController
   end
   
   def destroy
+    authorize @user
     @user.destroy
     render :json => {}, :status => :no_content
   end
   
-protected
+private
   
-  # hack to load resource on :create & thus get round CanCan's lack of support for Strong Parameters
   def load_user
-    @user = User.new user_params
+    @user = User.find params[:id]
   end
   
-  def user_params
-    params.require(:user).permit(:name, :email, :role, :active, :verified,
-      :password, :password_confirmation, :organization_id)
+  def permitted_params
+    params.require(:user).permit(policy(@user).permitted_attributes)
   end
 
-  def restrict_attributes_for_update!
-    if current_user? @user
-      error! :forbidden, "You cannot update your own role" if @user.role_changed?
-      error! :forbidden, "You cannot activate or suspend yourself" if @user.active_changed?
-      error! :forbidden, "You cannot change your own verification status" if @user.verified_changed?  
-    end
-    
-    if current_user.agent?
-      error! :forbidden, "You are not authorized to update user roles" if @user.role_changed?
-    end
-    
-  end
 end

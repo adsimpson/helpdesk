@@ -1,4 +1,4 @@
-class Authentication
+class UserAuthentication
   
   attr_reader :user
   
@@ -14,16 +14,8 @@ class Authentication
     @user = user
   end
   
-  def check_password(password)
+  def authenticate(password)
     user && user.authenticate(password)
-  end
-  
-  def account_active?
-    user && user.active
-  end
-  
-  def account_verified?
-    user && user.verified
   end
   
   def signed_in?
@@ -35,7 +27,7 @@ class Authentication
     # TODO - should we prevent sign-in if user already signed-in?
     
     old_latest, new_latest = user.latest_sign_in_at, Time.now.utc
-    user.previous_sign_in_at = old_latest # || new_latest
+    user.previous_sign_in_at = old_latest || new_latest
     user.latest_sign_in_at = new_latest
     
     user.sign_in_count ||= 0

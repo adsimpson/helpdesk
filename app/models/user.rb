@@ -1,27 +1,31 @@
 class User < ActiveRecord::Base
   
+  # associations
   belongs_to :organization
-  has_many :group_memberships, :dependent => :destroy
-  has_many :groups, :through => :group_memberships
+  has_many :group_memberships, dependent: :destroy
+  has_many :groups, through: :group_memberships
   
-  before_validation :generate_random_password, :on => :create
-  before_save { self.email = email.downcase }
-  after_save :delete_group_memberships!
-  
+  # validations
   validates :name, presence: true, length: {maximum: 50}
-  validates_inclusion_of :role, :in => ["admin", "agent", "end_user"]
+  validates_inclusion_of :role, in: ["admin", "agent", "end_user"]
   
   VALID_EMAIL_REGEX = /\A[\w+\-.]+@[a-z\d\-]+(\.[a-z]+)*\.[a-z]+\z/i
-  validates :email, presence: true, format: { with: VALID_EMAIL_REGEX },
-                    uniqueness: { case_sensitive: false }
+  validates :email, presence: true, format: { with: VALID_EMAIL_REGEX }, uniqueness: { case_sensitive: false }
   
   has_secure_password
   MIN_PASSWORD_LENGTH = 6
   validates :password, length: { minimum: MIN_PASSWORD_LENGTH }, allow_nil: true
-
-  validate :validate_linked_organization
   
-  # CLASS METHODS
+  validates_existence_of :organization, allow_nil: true
+  validate :organization_validator
+
+  # callbacks
+  before_validation :ensure_password_is_present, on: :create 
+  before_save :update_email_lower
+  before_save :map_organization_from_domain
+  after_save :delete_group_memberships_for_end_users
+  
+  # class methods
   
   # generates a random password consisting of strings and digits
   def self.random_password
@@ -31,7 +35,7 @@ class User < ActiveRecord::Base
     return password
   end
   
-  # INSTANCE METHODS
+  # instance methods
   
   def role?(role)
     self.role == role
@@ -55,23 +59,32 @@ class User < ActiveRecord::Base
   
 private
   
-  # if role changed to end_user - delete all group memberships for user
-  def delete_group_memberships!
-    GroupMembership.where(user: self).delete_all if self.end_user?
-  end
-  
-  # validation - ensure organization can only be linked if :role = 'agent' or 'end_user' & that it is valid
-  def validate_linked_organization
-    unless self.organization_id.nil?
-      errors.add(:organization, "can't be found") unless self.organization.present?
-      errors.add(:organization, "can't be linked unless role is 'agent' or 'end_user'") unless (self.agent? || self.end_user?)
+  def ensure_password_is_present
+    if (self.password.nil? && self.password_confirmation.nil?)
+      self.password = self.password_confirmation = User.random_password
     end
   end
   
-  # on create - generate random password if both password & password_confirmation are nil
-  def generate_random_password
-    if self.password.nil? && self.password_confirmation.nil?
-      self.password = self.password_confirmation = User.random_password
+  def update_email_lower
+    self.email = email.downcase
+  end
+  
+  def map_organization_from_domain
+    if (self.end_user? && self.organization.nil?)
+      domain_name = self.email.split("@")[1]
+      domain = Domain.where(name: domain_name).first
+      self.organization = domain.organization if (domain && domain.organization)
+    end
+  end
+  
+  # if role changed to end_user - delete all group memberships for user
+  def delete_group_memberships_for_end_users
+    GroupMembership.where(user: self).delete_all if self.end_user?
+  end
+    
+  def organization_validator
+    unless (self.organization.nil? || self.agent? || self.end_user? )
+      errors.add(:organization, "can't be assigned unless role is 'agent' or 'end_user'") 
     end
   end
   

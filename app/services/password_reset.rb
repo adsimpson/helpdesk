@@ -25,12 +25,12 @@ class PasswordReset
       generate_token
       user.password_reset_token_expires_at = token_expiration_window.hours.from_now
       user.save!
-      UserMailer.password_reset_instructions(user, instructions_email_config).deliver
+      send_instructions_email
     end
   end
   
   def update(password, password_confirmation)
-    return false if user.nil?
+    return false unless can_update?
     # TODO - should we prevent user from setting the same password as previous?
     
     updated = user.update_attributes(   
@@ -39,15 +39,38 @@ class PasswordReset
         password_reset_token: nil, 
         password_reset_token_expires_at: nil
     )
-    UserMailer.password_reset_success(user, success_email_config).deliver if updated
+    send_success_email if updated
     updated
   end
-
+  
+  def can_update?
+    !!user && token_exists? && !token_expired?
+  end
+  
+  def token_exists?
+    !!user.password_reset_token
+  end
+  
   def token_expired?
-    user.password_reset_token_expires_at < Time.now.utc
+    expires_at = user.password_reset_token_expires_at
+    if expires_at.nil?
+      return nil
+    else
+      expires_at < Time.now.utc
+    end
   end
 
-private
+  # number of hours after which token will expire
+  def token_expiration_window
+    # TODO - configurable per tenant
+    2
+  end
+  
+ private
+  
+  def send_instructions_email
+    UserMailer.password_reset_instructions(user, instructions_email_config).deliver
+  end
   
   def instructions_email_config
     # TODO - configurable per tenant
@@ -61,6 +84,10 @@ private
       }
   end
   
+  def send_success_email
+    UserMailer.password_reset_success(user, success_email_config).deliver
+  end
+  
   def success_email_config
     # TODO - configurable per tenant
     {
@@ -70,12 +97,6 @@ private
       :subject => 'Your password has been changed',
       :body =>  '.....'
       }
-  end
-  
-  # number of hours after which token will expire
-  def token_expiration_window
-    # TODO - configurable per tenant
-    2
   end
   
   def generate_token

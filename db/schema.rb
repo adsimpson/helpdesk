@@ -11,7 +11,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20131025155837) do
+ActiveRecord::Schema.define(version: 20131111124549) do
+
+  create_table "domains", force: true do |t|
+    t.string  "name"
+    t.integer "organization_id"
+  end
+
+  add_index "domains", ["name"], name: "index_domains_on_name", unique: true
 
   create_table "group_memberships", force: true do |t|
     t.integer  "group_id"
@@ -30,15 +37,18 @@ ActiveRecord::Schema.define(version: 20131025155837) do
     t.datetime "updated_at"
   end
 
+  add_index "groups", ["name"], name: "index_groups_on_name", unique: true
+
   create_table "organizations", force: true do |t|
     t.string   "name"
     t.string   "external_id"
     t.string   "notes"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.text     "domains"
-    t.text     "tags"
+    t.integer  "group_id"
   end
+
+  add_index "organizations", ["name"], name: "index_organizations_on_name", unique: true
 
   create_table "users", force: true do |t|
     t.string   "name"
@@ -47,7 +57,7 @@ ActiveRecord::Schema.define(version: 20131025155837) do
     t.string   "password_digest"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.integer  "sign_in_count"
+    t.integer  "sign_in_count",                   default: 0
     t.string   "access_token"
     t.datetime "previous_sign_in_at"
     t.datetime "latest_sign_in_at"

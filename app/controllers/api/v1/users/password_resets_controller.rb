@@ -1,5 +1,8 @@
 class Api::V1::Users::PasswordResetsController < Api::V1::BaseController
   skip_before_action :authenticate_user!
+  skip_before_action :authorize_user!
+  skip_after_action :verify_authorized
+  
   before_action :password_reset_service_active!
   before_action :password_reset_from_token!, :except => [:create]
   
@@ -27,7 +30,7 @@ class Api::V1::Users::PasswordResetsController < Api::V1::BaseController
     end
   end
   
-protected
+private
   
   # raises error if password reset workflow not configured
   def password_reset_service_active!

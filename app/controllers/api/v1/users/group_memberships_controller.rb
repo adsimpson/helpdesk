@@ -1,28 +1,27 @@
 class Api::V1::Users::GroupMembershipsController < Api::V1::BaseController
-  before_action :load_group_membership, :only => [:create]
-  load_and_authorize_resource :except => [:index_groups, :set_default]
-  load_resource :only => :set_default
   before_action :load_user
+  before_action :load_group_membership, :except => [:index, :index_groups, :create]
   
   def index
-    render :json => @group_memberships.where(:user => @user)
+    authorize User
+    render :json => @user.group_memberships
   end
   
   def index_groups
-    # non-standard action requires :read authorization on the GroupMembership resource
-    authorize! :read, GroupMembership
-    
+    authorize User, :index?
     render :json => @user.groups
   end
   
   def show
+    authorize @group_membership
     render :json => @group_membership
   end
   
   def create
-    @group_membership.user = @user
+    @group_membership = @user.group_memberships.new
+    authorize @group_membership
 
-    if @group_membership.save
+    if @group_membership.update_attributes permitted_params
       render :json => @group_membership, :status => :created  
     else
       error!(:invalid_resource, @group_membership.errors, 'Group Membership has not been created')
@@ -30,13 +29,13 @@ class Api::V1::Users::GroupMembershipsController < Api::V1::BaseController
   end
   
   def destroy 
+    authorize @group_membership
     @group_membership.destroy
     render :json => {}, :status => :no_content
   end
 
   def set_default
-    # non-standard action requires :write authorization on the GroupMembership resource
-    authorize! :write, GroupMembership
+    authorize @group_membership
     
     @default = @user.group_memberships.where(:default => true).first
     @default.update_attributes(:default => false) if (@default && @default != @group_membership)
@@ -48,19 +47,18 @@ class Api::V1::Users::GroupMembershipsController < Api::V1::BaseController
     end
   end
 
-protected
+private
   
   def load_user
     @user = User.find params[:user_id]
   end
   
-  # hack to load resource on :create & thus get round CanCan's lack of support for Strong Parameters
   def load_group_membership
-    @group_membership = GroupMembership.new group_membership_params
+    @group_membership = GroupMembership.find params[:id]
   end
   
-  def group_membership_params
-    params.require(:group_membership).permit(:group_id)
+  def permitted_params
+    params.require(:group_membership).permit(policy(@group_membership).permitted_attributes)
   end
   
 end

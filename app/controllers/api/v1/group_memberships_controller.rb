@@ -1,17 +1,20 @@
 class Api::V1::GroupMembershipsController < Api::V1::BaseController
-  before_action :load_group_membership, :only => [:create]
-  load_and_authorize_resource
+  before_action :load_group_membership, :except => [:index, :create]
 
   def index
-    render :json => @group_memberships
+    authorize GroupMembership
+    render :json => GroupMembership.all
   end
 
   def show
+    authorize @group_membership
     render :json => @group_membership
   end
   
   def create
-    if @group_membership.save
+    @group_membership = GroupMembership.new
+    authorize @group_membership
+    if @group_membership.update_attributes permitted_params
       render :json => @group_membership, :status => :created  
     else
       error!(:invalid_resource, @group_membership.errors, 'Group Membership has not been created')
@@ -19,19 +22,19 @@ class Api::V1::GroupMembershipsController < Api::V1::BaseController
   end
   
   def destroy 
+    authorize @group_membership
     @group_membership.destroy
     render :json => {}, :status => :no_content
   end
   
-protected
+private
   
-  # hack to load resource on :create & thus get round CanCan's lack of support for Strong Parameters
   def load_group_membership
-    @group_membership = GroupMembership.new group_membership_params
+    @group_membership = GroupMembership.find params[:id]
   end
   
-  def group_membership_params
-    params.require(:group_membership).permit(:user_id, :group_id)
+  def permitted_params
+    params.require(:group_membership).permit(policy(@group_membership).permitted_attributes)
   end
    
 end

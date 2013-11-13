@@ -10,7 +10,9 @@ gem 'oops', :path => "../oops/"
 gem 'xibit', :path => "../xibit/"
 
 gem 'require_all'
-gem 'cancan'
+gem 'pundit'
+# Github master supports Rails 4
+gem 'validates_existence', git: 'https://github.com/perfectline/validates_existence.git', branch: 'master'
 
 # To use ActiveModel has_secure_password
 gem 'bcrypt-ruby', '3.0.1'
@@ -19,13 +21,15 @@ gem 'bcrypt-ruby', '3.0.1'
 
 group :development, :test do
   gem 'sqlite3'
-  gem 'rspec-rails'
 end
 
 group :test do
   gem 'selenium-webdriver', '2.35.1'
   gem 'capybara', '2.1.0'
+  gem 'rspec-rails'
   gem 'factory_girl_rails', "~> 4.0"
+  gem 'shoulda-matchers'
+  gem 'json_spec'
 end
 
 group :production do
