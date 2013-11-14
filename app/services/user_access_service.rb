@@ -1,4 +1,4 @@
-class UserAccess
+class UserAccessService
   
   attr_reader :user
   
@@ -6,11 +6,11 @@ class UserAccess
     @user = user
   end
   
-  def suspended?
+  def user_suspended?
     user.active == false
   end
   
-  def verified?
+  def user_verified?
     user.verified
   end
   

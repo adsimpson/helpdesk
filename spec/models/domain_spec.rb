@@ -20,8 +20,8 @@ describe Domain do
   it { should have_db_index(:name).unique(true) }
   
   # callback: before_save
-  describe ".before_save" do
-    it "should downcase name" do
+  describe "#before_save" do
+    it "downcases name" do
       domain2 = FactoryGirl.create :domain, name: domain.name.upcase
       expect(domain2.name).to eq domain.name
     end

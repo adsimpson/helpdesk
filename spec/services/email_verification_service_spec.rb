@@ -1,12 +1,12 @@
 require 'spec_helper'
 
-describe EmailVerification do
+describe EmailVerificationService do
   let(:user) { FactoryGirl.create :user }
-  let(:email_verification) { EmailVerification.new user } 
+  let(:service) { EmailVerificationService.new user } 
   
-  # CLASS METHOD: service_active? 
-  describe ".service_active?" do
-    subject { EmailVerification.service_active? }
+  # CLASS METHOD: active? 
+  describe ".active?" do
+    subject { EmailVerificationService.active? }
     context "when email verification workflow is enabled within tenant configuration" do
       # TODO
       # it { should be_true }
@@ -21,7 +21,7 @@ describe EmailVerification do
 
   # METHOD: send_instructions 
   describe "#send_instructions" do
-    before { email_verification.send_instructions }
+    before { service.send_instructions }
     it "generates & stores a new verification token" do
       expect(user.reload.verification_token).not_to be_nil
     end
@@ -35,37 +35,40 @@ describe EmailVerification do
   
   # METHOD: token_exists?
   describe "#token_exists?" do
-    subject { email_verification.token_exists? }
+    subject { service.token_exists? }
     context "when instructions have NOT been sent" do
       it { should be_false }
     end
     context "when instructions have been sent" do
-      before { email_verification.send_instructions }
+      before { service.send_instructions }
       it { should be_true }
     end
   end
 
   # METHOD: token_expired?
   describe "#token_expired?" do
-    subject { email_verification.token_expired? }
+    subject { service.token_expired? }
     context "when instructions have NOT been sent" do
-      it { should be_nil }
+      it { should be_false }
     end
     context "when instructions have been sent" do
-      before { email_verification.send_instructions } 
+      before { service.send_instructions } 
       context "and have since expired" do
-        before { user.verification_token_expires_at = 1.hour.ago }
+        before { Timecop.freeze(user.verification_token_expires_at + 1.minute) }
+        after { Timecop.return }
         it { should be_true }
       end
       context "and have NOT expired" do
+        before { Timecop.freeze(user.verification_token_expires_at - 1.minute) }
+        after { Timecop.return }
         it { should be_false }
       end
     end
   end
 
-  # METHOD: can_update 
-  describe "#can_update?" do
-    subject { email_verification.can_update? }
+  # METHOD: can_verfiy 
+  describe "#can_verify?" do
+    subject { service.can_verify? }
     context "when user is NIL" do
       before { user = nil }
       it { should be_false }
@@ -74,7 +77,7 @@ describe EmailVerification do
       it { should be_false }
     end
     context "when instructions have been sent" do
-      before { email_verification.send_instructions }
+      before { service.send_instructions }
       context "and have since expired" do
         before { user.verification_token_expires_at = 1.hour.ago }
         it { should be_false }
@@ -85,13 +88,13 @@ describe EmailVerification do
     end
   end
 
-  # METHOD: update 
-  describe "#update" do
-    before { email_verification.send_instructions }
+  # METHOD: verify 
+  describe "#verify" do
+    before { service.send_instructions }
     let(:password) { User.random_password.downcase } 
     context "with a valid / matching password & password confirmation" do
       let(:password_confirmation) { password }
-      let!(:result) { email_verification.update(password, password_confirmation) }
+      let!(:result) { service.verify(password, password_confirmation) }
       it "returns true" do
         expect(result).to eq true
       end
@@ -110,7 +113,7 @@ describe EmailVerification do
     end
     context "with a non-matching password & password confirmation" do
       let(:password_confirmation) { password.upcase }
-      let!(:result) { email_verification.update(password, password_confirmation) }
+      let!(:result) { service.verify(password, password_confirmation) }
       it "returns false" do
         expect(result).to eq false
       end

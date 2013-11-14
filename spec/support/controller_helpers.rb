@@ -14,7 +14,7 @@ module ControllerHelpers
   
   def sign_in(user = double("user"))
     controller.stub :current_user => user
-    controller.stub :user_authentication => UserAuthentication.new(user)
+    controller.stub :user_authentication_service => UserAuthenticationService.new(user)
   end
   
   def no_sign_in

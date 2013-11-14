@@ -6,11 +6,11 @@ Helpdesk::Application.routes.draw do
     scope module: :v1, constraints: ApiConstraints.new(version: 1, default: true) do
        
       namespace :users do
-        post "/sign_in", :to => 'authentications#create'
-        delete "/sign_out", :to => 'authentications#destroy'
-        resources :authentications, path: '/authentication', only: [:create, :destroy]
-        resources :password_resets, path: '/password_reset', only: [:show, :create, :update]
-        resources :email_verifications, path: '/email_verification', only: [:show, :create, :update]
+        post "/sign_in", :to => 'access_tokens#create'
+        delete "/sign_out", :to => 'access_tokens#destroy'
+        resources :access_tokens, only: [:create, :destroy]
+        resources :password_resets, only: [:show, :create, :update]
+        resources :email_verifications, only: [:show, :create, :update]
       end
       resources :users, except: [:new, :edit] do
         get "/me" , :to => 'users#show_current_user', :on => :collection

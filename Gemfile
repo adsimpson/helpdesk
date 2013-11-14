@@ -30,6 +30,7 @@ group :test do
   gem 'factory_girl_rails', "~> 4.0"
   gem 'shoulda-matchers'
   gem 'json_spec'
+  gem 'timecop'
 end
 
 group :production do

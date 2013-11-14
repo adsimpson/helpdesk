@@ -11,7 +11,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20131111124549) do
+ActiveRecord::Schema.define(version: 20131114112816) do
+
+  create_table "access_tokens", force: true do |t|
+    t.string   "token_digest",                null: false
+    t.integer  "user_id",                     null: false
+    t.boolean  "active",       default: true, null: false
+    t.datetime "expires_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "access_tokens", ["token_digest"], name: "index_access_tokens_on_token_digest", unique: true
+  add_index "access_tokens", ["user_id"], name: "index_access_tokens_on_user_id"
 
   create_table "domains", force: true do |t|
     t.string  "name"
@@ -58,7 +70,6 @@ ActiveRecord::Schema.define(version: 20131111124549) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.integer  "sign_in_count",                   default: 0
-    t.string   "access_token"
     t.datetime "previous_sign_in_at"
     t.datetime "latest_sign_in_at"
     t.boolean  "active",                          default: true
@@ -70,7 +81,6 @@ ActiveRecord::Schema.define(version: 20131111124549) do
     t.integer  "organization_id"
   end
 
-  add_index "users", ["access_token"], name: "index_users_on_access_token", unique: true
   add_index "users", ["email"], name: "index_users_on_email", unique: true
   add_index "users", ["organization_id"], name: "index_users_on_organization_id"
   add_index "users", ["password_reset_token"], name: "index_users_on_password_reset_token", unique: true

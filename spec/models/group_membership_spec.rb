@@ -41,7 +41,7 @@ describe GroupMembership do
   end
   
   # callback: before create
-  describe ".before_create" do
+  describe "#before_create" do
     context "if user is not a member of another group" do
       before { GroupMembership.where(user: user).delete_all }
       it "should set default = true" do

@@ -12,16 +12,16 @@ class ApplicationController < ActionController::API
   # Verify that controller actions are authorized
   after_action :verify_authorized
 
-  def user_authentication
-    @user_authentication ||= UserAuthentication.from_token(authenticate_with_http_token { |token| token })
+  def user_authentication_service
+    @user_authentication_service ||= UserAuthenticationService.from_token(authenticate_with_http_token { |token| token })
   end
 
-  def user_access
-    @user_access ||= UserAccess.new current_user
+  def user_access_service
+    @user_access_service ||= UserAccessService.new current_user
   end
   
   def current_user
-    user_authentication.user
+    user_authentication_service.user
   end
   
   def current_user?(user)
@@ -29,17 +29,15 @@ class ApplicationController < ActionController::API
   end
   
   def signed_in?
-    user_authentication.signed_in?
+    user_authentication_service.signed_in?
   end
   
   def authenticate_user!
-    unless signed_in?
-      error! :unauthenticated, 'Authentication token is missing or invalid'  
-    end
+    error! :unauthenticated, 'Authentication token is missing or invalid' unless signed_in? 
   end
   
   def authorize_user!
-   error! :forbidden, 'Your user account is suspended' if user_access.suspended?
-   error! :forbidden, 'Your user account is not verified' unless user_access.verified?
+    error! :forbidden, 'Your user account is suspended' if user_access_service.user_suspended?
+    error! :forbidden, 'Your user account is not verified' unless user_access_service.user_verified?
   end
 end

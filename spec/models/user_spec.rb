@@ -37,13 +37,13 @@ describe User do
     let(:organization) { FactoryGirl.create :organization }
     before { user.organization = organization }
     ["agent", "end_user"].each do |valid_role|
-      it "should allow user role '#{valid_role}'" do
+      it "allows user role '#{valid_role}'" do
         user.role = valid_role
         expect(user).to be_valid
       end
     end
     ["admin"].each do |invalid_role|
-      it "should not allow user role '#{invalid_role}'" do
+      it "doesn't allow user role '#{invalid_role}'" do
         user.role = invalid_role
         expect(user).to be_invalid
       end
@@ -53,7 +53,6 @@ describe User do
   # indexes
   it { should have_db_index(:email).unique(true) }
   it { should have_db_index(:organization_id) }
-  it { should have_db_index(:access_token).unique(true) }
   it { should have_db_index(:password_reset_token).unique(true) }
   it { should have_db_index(:verification_token).unique(true) }
 
@@ -67,25 +66,25 @@ describe User do
   end
 
   # callback: before validation
-  describe ".before_validation" do
+  describe "#before_validation" do
     context "if both password & password_confirmation are nil" do
       before { user.update_attributes(password: nil, password_confirmation: nil) }
-      it "should auto-generate password" do
+      it "auto-generates password" do
         expect(user.password).not_to be_nil
       end
     end
     context "if either password or password_confirmation are present" do
       let(:password) { User.random_password }
       before { user.update_attributes(password: password, password_confirmation: password) }
-      it "should not auto-generate password" do
+      it "doesn't auto-generate password" do
         expect(user.password).to eq password
       end
     end
   end
     
   # callback: before save
-  describe ".before_save" do
-    it "should downcase email" do
+  describe "#before_save" do
+    it "downcases email" do
       user2 = FactoryGirl.create :user, email: user.email.upcase
       expect(user2.email).to eq user.email
     end
@@ -93,7 +92,7 @@ describe User do
       let(:organization) { FactoryGirl.create :organization, domains: [FactoryGirl.create(:domain)] }
       before { user.assign_attributes(role: "end_user", organization: nil) }
       
-      it "should auto-assign organization based on email domain" do
+      it "auto-assigns organization based on email domain" do
         user.update_attributes(email: "user@#{organization.domains.first.name}")
         expect(user.organization).to eq organization
       end
@@ -101,14 +100,14 @@ describe User do
   end
 
   # callback: after save
-  describe ".after_save" do
+  describe "#after_save" do
     context "if role is changed to 'end_user' when group_memberships exist" do
       before do
         user.update_attributes(role: "agent")
         1.upto(3) { FactoryGirl.create :group_membership, user: user }
         user.update_attributes(role: "end_user")
       end
-      it "should auto-delete all associated group_memberships" do
+      it "auto-deletes all associated group_memberships" do
         expect(user.group_memberships.count).to eq 0
       end
     end

@@ -20,11 +20,11 @@ class Api::V1::UsersController < Api::V1::BaseController
     @user = User.new
     authorize @user
     
-    requires_verification = EmailVerification.service_active? && !@user.verified
+    requires_verification = EmailVerificationService.active? && !@user.verified
     @user.verified = true unless requires_verification
      
     if @user.update_attributes permitted_params
-      EmailVerification.new(@user).send_instructions if requires_verification
+      EmailVerificationService.new(@user).send_instructions if requires_verification
       render :json => @user, :status => :created  
     else
       error!(:invalid_resource, @user.errors, "User has not been created")
