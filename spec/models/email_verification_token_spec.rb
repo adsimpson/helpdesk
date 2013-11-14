@@ -1,8 +1,7 @@
 require 'spec_helper'
 
-describe AccessToken do
-  let(:expires_at) { nil }
-  let(:token) { FactoryGirl.build :access_token, expires_at: expires_at }
+describe EmailVerificationToken do
+  let(:token) { FactoryGirl.build :email_verification_token }
   
   # factory
   it { should have_a_valid_factory }
@@ -29,7 +28,7 @@ describe AccessToken do
   describe "token" do
     before { token.save }
     it "is NOT persisted to the database" do
-      expect(AccessToken.last.token).to be_nil
+      expect(EmailVerificationToken.last.token).to be_nil
     end
   end    
   
@@ -37,7 +36,7 @@ describe AccessToken do
   describe "token_digest" do
     before { token.save }
     it "is persisted to the database" do
-      expect(AccessToken.last.token_digest).to_not be_nil
+      expect(EmailVerificationToken.last.token_digest).to_not be_nil
     end
   end    
   
@@ -45,10 +44,10 @@ describe AccessToken do
   describe "#expired?" do
     subject { token.expired? }
     context "when 'expires_at' has NOT been set" do
+      before { token.expires_at = nil }
       it { should be_false }
     end
     context "when 'expires_at' has been set" do
-      let(:expires_at) { 1.day.from_now }
       context "to before current date / time" do
         before { Timecop.freeze(token.expires_at + 1.minute) }
         after { Timecop.return }

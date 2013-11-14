@@ -5,31 +5,35 @@ Helpdesk::Application.routes.draw do
     
     scope module: :v1, constraints: ApiConstraints.new(version: 1, default: true) do
        
-      namespace :users do
-        post "/sign_in", :to => 'access_tokens#create'
-        delete "/sign_out", :to => 'access_tokens#destroy'
-        resources :access_tokens, only: [:create, :destroy]
-        resources :password_resets, only: [:show, :create, :update]
-        resources :email_verifications, only: [:show, :create, :update]
-      end
+      post "/sign_in", :to => "access_tokens#create"
+      delete "/sign_out", :to => "access_tokens#destroy"
+      get "/me" , :to => "users#show_current_user"
+      resources :access_tokens, only: [:create, :destroy]
+      resources :password_reset_tokens, only: [:show, :create, :update]
+      resources :email_verification_tokens, only: [:show, :create, :update]
+      
       resources :users, except: [:new, :edit] do
-        get "/me" , :to => 'users#show_current_user', :on => :collection
         scope module: :users do
-          get "/groups", :to => 'group_memberships#index_groups'
-          resources :group_memberships, except: [:new, :edit, :update] do
-            put "/make_default" , :to => 'group_memberships#set_default', :on => :member
+          get "/groups", :to => "group_memberships#index_groups"
+          resources :group_memberships, only: [:index, :show, :create, :destroy] do
+            put "/make_default" , :to => "group_memberships#set_default", :on => :member
           end
         end
       end
+      
       resources :groups, except: [:new, :edit] do
         scope module: :groups do
-          get "/users", :to => 'group_memberships#index_users'
-          resources :group_memberships, path: '/memberships', only: [:index]
+          get "/users", :to => "memberships#index_users"
+          resources :memberships, only: [:index]
         end
       end
-      resources :group_memberships, except: [:new, :edit, :update]
+      
+      resources :group_memberships,  only: [:index, :show, :create, :destroy]
+      
       resources :organizations, except: [:new, :edit] do
-        get "/users", :to => 'organizations/users#index'
+        scope module: :organizations do
+          resources :users, only: [:index]
+        end
       end
       
     end

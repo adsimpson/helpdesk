@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20131114112816) do
+ActiveRecord::Schema.define(version: 20131114144908) do
 
   create_table "access_tokens", force: true do |t|
     t.string   "token_digest",                null: false
@@ -31,6 +31,17 @@ ActiveRecord::Schema.define(version: 20131114112816) do
   end
 
   add_index "domains", ["name"], name: "index_domains_on_name", unique: true
+
+  create_table "email_verification_tokens", force: true do |t|
+    t.string   "token_digest", null: false
+    t.integer  "user_id",      null: false
+    t.datetime "expires_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "email_verification_tokens", ["token_digest"], name: "index_email_verification_tokens_on_token_digest", unique: true
+  add_index "email_verification_tokens", ["user_id"], name: "index_email_verification_tokens_on_user_id"
 
   create_table "group_memberships", force: true do |t|
     t.integer  "group_id"
@@ -62,28 +73,33 @@ ActiveRecord::Schema.define(version: 20131114112816) do
 
   add_index "organizations", ["name"], name: "index_organizations_on_name", unique: true
 
+  create_table "password_reset_tokens", force: true do |t|
+    t.string   "token_digest", null: false
+    t.integer  "user_id",      null: false
+    t.datetime "expires_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "password_reset_tokens", ["token_digest"], name: "index_password_reset_tokens_on_token_digest", unique: true
+  add_index "password_reset_tokens", ["user_id"], name: "index_password_reset_tokens_on_user_id"
+
   create_table "users", force: true do |t|
     t.string   "name"
     t.string   "email"
-    t.string   "role",                            default: "end_user"
+    t.string   "role",                default: "end_user"
     t.string   "password_digest"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.integer  "sign_in_count",                   default: 0
+    t.integer  "sign_in_count",       default: 0
     t.datetime "previous_sign_in_at"
     t.datetime "latest_sign_in_at"
-    t.boolean  "active",                          default: true
-    t.string   "password_reset_token"
-    t.datetime "password_reset_token_expires_at"
-    t.string   "verification_token"
-    t.datetime "verification_token_expires_at"
-    t.boolean  "verified",                        default: false
+    t.boolean  "active",              default: true
+    t.boolean  "verified",            default: false
     t.integer  "organization_id"
   end
 
   add_index "users", ["email"], name: "index_users_on_email", unique: true
   add_index "users", ["organization_id"], name: "index_users_on_organization_id"
-  add_index "users", ["password_reset_token"], name: "index_users_on_password_reset_token", unique: true
-  add_index "users", ["verification_token"], name: "index_users_on_verification_token", unique: true
 
 end

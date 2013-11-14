@@ -1,6 +1,5 @@
 class UserAuthenticationService
-  
-  attr_reader :user, :access_token
+  attr_reader :user, :token
   
   def self.from_email(email)
     user = User.find_by(:email => email.downcase)
@@ -8,14 +7,14 @@ class UserAuthenticationService
   end
   
   def self.from_token(unencrypted_token)
-    access_token = unencrypted_token ? AccessToken.find_by(token_digest: AccessToken.encrypt(unencrypted_token)) : nil
-    user = access_token && !access_token.expired? ? access_token.user : nil
-    new(user, access_token)
+    token = unencrypted_token ? AccessToken.find_by(token_digest: AccessToken.encrypt(unencrypted_token)) : nil
+    user = token && !token.expired? ? token.user : nil
+    new(user, token)
   end
   
-  def initialize(user, access_token=nil)
+  def initialize(user, token=nil)
     @user = user
-    @access_token = access_token
+    @token = token
   end
   
   def authenticate(password)
@@ -40,15 +39,15 @@ class UserAuthenticationService
     
     # delete current access_token if user already signed in
     # TODO - or should we just prevent the user from signing in?
-    access_token.destroy unless access_token.nil?
+    token.destroy unless token.nil?
     
-    # create a new access_token for the user
-    @access_token = AccessToken.create(user: user)
+    # create a new access token for the user
+    @token = AccessToken.create(user: user)
   end
   
   def sign_out
-    # delete current access_token
-    access_token.destroy unless access_token.nil?
+    # delete current access token
+    token.destroy unless token.nil?
   end
   
 

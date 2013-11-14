@@ -1,5 +1,5 @@
 class EmailVerificationService
-  attr_reader :user
+  attr_reader :user, :token
   
   def self.active?
     # TODO - configurable per tenant
@@ -7,23 +7,36 @@ class EmailVerificationService
   end
   
   def self.from_email(email)
-    new User.find_by(:email => email.downcase)
+    user = User.find_by(:email => email.downcase)
+    new(user)
+  end
+
+  def self.from_token(unencrypted_token)
+    token = unencrypted_token ? EmailVerificationToken.find_by(token_digest: EmailVerificationToken.encrypt(unencrypted_token)) : nil
+    user = token && !token.expired? ? token.user : nil
+    new(user, token)
   end
   
-  def self.from_token(token)
-    new User.find_by(:verification_token => token)
-  end
-  
-  def initialize(user)
+  def initialize(user, token=nil)
     @user = user
+    @token = token
   end
 
   def send_instructions
     return false if user.nil?
-    generate_token
-    user.verification_token_expires_at = token_expiration_window.hours.from_now
-    user.save!
+    
+    # delete any existing tokens for the user
+    EmailVerificationToken.where(user: user).delete_all
+    
+    # create a new token
+    expires_at = token_expiration_window.hours.from_now
+    @token = EmailVerificationToken.create(user: user, expires_at: expires_at)
+    
+    # send email    
     send_instructions_email
+    
+    # return token
+    token
   end
   
   def verify(password, password_confirmation)
@@ -33,35 +46,23 @@ class EmailVerificationService
     updated = user.update_attributes(   
         password: password, 
         password_confirmation: password_confirmation,
-        verified: true,
-        verification_token: nil, 
-        verification_token_expires_at: nil
+        verified: true
     )
-    send_success_email if updated
+    if updated
+      token.destroy
+      send_success_email
+    end
     updated
   end
 
   def can_verify?
-    !!user && token_exists? && !token_expired?
+    !!user && !!token && !token.expired?
   end
   
-  def token_exists?
-    !!user.verification_token
-  end
-  
-  def token_expired?
-    expires_at = user.verification_token_expires_at
-    if expires_at.nil?
-      return false
-    else
-      expires_at < Time.now.utc
-    end
-  end
-
 private
   
   def send_instructions_email
-    # UserMailer.email_verification_instructions(user, instructions_email_config).deliver
+    UserMailer.email_verification_instructions(user, token, instructions_email_config).deliver
   end
   
   def instructions_email_config
@@ -77,7 +78,7 @@ private
   end
   
   def send_success_email
-    # UserMailer.email_verification_success(user, success_email_config).deliver
+    UserMailer.email_verification_success(user, success_email_config).deliver
   end
   
   def success_email_config
@@ -96,11 +97,5 @@ private
     # TODO - configurable per tenant
     72
   end
-  
-  def generate_token
-    begin
-      user.verification_token = SecureRandom.hex
-    end while User.exists?(verification_token: user.verification_token)
-  end  
     
 end

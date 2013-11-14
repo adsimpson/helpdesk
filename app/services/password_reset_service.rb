@@ -1,5 +1,5 @@
 class PasswordResetService
-  attr_reader :user
+  attr_reader :user, :token
   
   def self.active?
     # TODO - configurable per tenant
@@ -7,25 +7,37 @@ class PasswordResetService
   end
   
   def self.from_email(email)
-    new User.find_by(:email => email.downcase)
+    user = User.find_by(:email => email.downcase)
+    new(user)
   end
 
-  def self.from_token(token)
-    new User.find_by(:password_reset_token => token)
+  def self.from_token(unencrypted_token)
+    token = unencrypted_token ? PasswordResetToken.find_by(token_digest: PasswordResetToken.encrypt(unencrypted_token)) : nil
+    user = token && !token.expired? ? token.user : nil
+    new(user, token)
   end
   
-  def initialize(user)
+  def initialize(user, token=nil)
     @user = user
+    @token = token
   end
   
   def send_instructions
     if user.nil?
       # TODO - should we send warning email to specified email address if no associated user account?
     else
-      generate_token
-      user.password_reset_token_expires_at = token_expiration_window.hours.from_now
-      user.save!
+      # delete any existing tokens for the user
+      PasswordResetToken.where(user: user).delete_all
+      
+      # create a new token
+      expires_at = token_expiration_window.hours.from_now
+      @token = PasswordResetToken.create(user: user, expires_at: expires_at)
+      
+      # send email
       send_instructions_email
+      
+      # return token
+      token
     end
   end
   
@@ -35,31 +47,19 @@ class PasswordResetService
     
     updated = user.update_attributes(   
         password: password, 
-        password_confirmation: password_confirmation,
-        password_reset_token: nil, 
-        password_reset_token_expires_at: nil
+        password_confirmation: password_confirmation
     )
-    send_success_email if updated
+    if updated
+      token.destroy
+      send_success_email
+    end
     updated
   end
   
   def can_reset?
-    !!user && token_exists? && !token_expired?
+    !!user && !!token && !token.expired?
   end
   
-  def token_exists?
-    !!user.password_reset_token
-  end
-  
-  def token_expired?
-    expires_at = user.password_reset_token_expires_at
-    if expires_at.nil?
-      return false
-    else
-      expires_at < Time.now.utc
-    end
-  end
-
   # number of hours after which token will expire
   def token_expiration_window
     # TODO - configurable per tenant
@@ -69,7 +69,7 @@ class PasswordResetService
  private
   
   def send_instructions_email
-    UserMailer.password_reset_instructions(user, instructions_email_config).deliver
+    UserMailer.password_reset_instructions(user, token, instructions_email_config).deliver
   end
   
   def instructions_email_config
@@ -99,10 +99,5 @@ class PasswordResetService
       }
   end
   
-  def generate_token
-    begin
-      user.password_reset_token = SecureRandom.hex
-    end while User.exists?(password_reset_token: user.password_reset_token)
-  end
     
 end

@@ -22,51 +22,18 @@ describe EmailVerificationService do
   # METHOD: send_instructions 
   describe "#send_instructions" do
     before { service.send_instructions }
-    it "generates & stores a new verification token" do
-      expect(user.reload.verification_token).not_to be_nil
+    it "generates & stores a new email verification token" do
+      expect(EmailVerificationToken.last.user).to eq user
     end
     it "sets a verification expiry timestamp" do
-      expect(user.reload.verification_token_expires_at).to be > Time.now.utc
+      expect(EmailVerificationToken.last.expires_at).to be > Time.now.utc
     end
     it "sends verification instructions to the user's email address" do
       expect(ActionMailer::Base.deliveries.last.to).to eq [user.email]
     end
   end
   
-  # METHOD: token_exists?
-  describe "#token_exists?" do
-    subject { service.token_exists? }
-    context "when instructions have NOT been sent" do
-      it { should be_false }
-    end
-    context "when instructions have been sent" do
-      before { service.send_instructions }
-      it { should be_true }
-    end
-  end
-
-  # METHOD: token_expired?
-  describe "#token_expired?" do
-    subject { service.token_expired? }
-    context "when instructions have NOT been sent" do
-      it { should be_false }
-    end
-    context "when instructions have been sent" do
-      before { service.send_instructions } 
-      context "and have since expired" do
-        before { Timecop.freeze(user.verification_token_expires_at + 1.minute) }
-        after { Timecop.return }
-        it { should be_true }
-      end
-      context "and have NOT expired" do
-        before { Timecop.freeze(user.verification_token_expires_at - 1.minute) }
-        after { Timecop.return }
-        it { should be_false }
-      end
-    end
-  end
-
-  # METHOD: can_verfiy 
+  # METHOD: can_verify? 
   describe "#can_verify?" do
     subject { service.can_verify? }
     context "when user is NIL" do
@@ -79,10 +46,13 @@ describe EmailVerificationService do
     context "when instructions have been sent" do
       before { service.send_instructions }
       context "and have since expired" do
-        before { user.verification_token_expires_at = 1.hour.ago }
+        before { Timecop.freeze(service.token.expires_at + 1.minute) }
+        after { Timecop.return }
         it { should be_false }
       end
       context "and have NOT expired" do
+        before { Timecop.freeze(service.token.expires_at - 1.minute) }
+        after { Timecop.return }
         it { should be_true }
       end
     end
@@ -98,14 +68,17 @@ describe EmailVerificationService do
       it "returns true" do
         expect(result).to eq true
       end
-      it "deletes the verification token" do
-        expect(user.reload.verification_token).to be_nil
+      it "updates the user's verified status" do
+        found_user = User.find(user.id)
+        expect(found_user.verified).to eq true
       end
-      it "deletes the verification expiry timestamp" do
-        expect(user.reload.verification_token_expires_at).to be_nil
+      it "updates the user's password" do
+        found_user = User.find(user.id)
+        expect(found_user.password_digest).to eq user.password_digest
       end
-      it "sets verified = true" do
-        expect(user.reload.verified).to eq true
+      it "deletes the email verification token" do
+        found_token = EmailVerificationToken.where(id: service.token.id).first
+        expect(found_token).to be_nil
       end
       it "sends verification success message to the user's email address" do
         expect(ActionMailer::Base.deliveries.last.to).to eq [user.email]
@@ -117,15 +90,19 @@ describe EmailVerificationService do
       it "returns false" do
         expect(result).to eq false
       end
-      it "retains the verification token" do
-        expect(user.reload.verification_token).not_to be_nil
+      it "doesn't update the user's verified status" do
+        found_user = User.find(user.id)
+        expect(found_user.verified).to eq false
       end
-      it "retains the verification expiry timestamp" do
-        expect(user.reload.verification_token_expires_at).not_to be_nil
+      it "doesn't update the user's password" do
+        found_user = User.find(user.id)
+        expect(found_user.password_digest).to_not eq user.password_digest
       end
-      it "retains verified = false" do
-        expect(user.reload.verified).to eq false
+      it "doesn't delete the email verification token" do
+        found_token = EmailVerificationToken.where(id: service.token.id).first
+        expect(found_token).not_to be_nil
       end
+
     end
   end
 

@@ -1,4 +1,4 @@
-class Api::V1::Groups::GroupMembershipsController < Api::V1::BaseController
+class Api::V1::Groups::MembershipsController < Api::V1::BaseController
   before_action :load_group
   
   # returns a list of group memberships for the group

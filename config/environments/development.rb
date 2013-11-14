@@ -26,6 +26,9 @@ Helpdesk::Application.configure do
     :authentication       => "plain",  
     :enable_starttls_auto => true  
     } 
+  
+  require 'development_mail_interceptor'
+  ActionMailer::Base.register_interceptor(DevelopmentMailInterceptor)
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log

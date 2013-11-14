@@ -23,46 +23,13 @@ describe PasswordResetService do
   describe "#send_instructions" do
     before { service.send_instructions }
     it "generates & stores a new password reset token" do
-      expect(user.reload.password_reset_token).not_to be_nil
+      expect(PasswordResetToken.last.user).to eq user
     end
     it "sets a password reset expiry timestamp" do
-      expect(user.reload.password_reset_token_expires_at).to be > Time.now.utc
+      expect(PasswordResetToken.last.expires_at).to be > Time.now.utc
     end
     it "sends password reset instructions to the user's email address" do
       expect(ActionMailer::Base.deliveries.last.to).to eq [user.email]
-    end
-  end
-  
-  # METHOD: token_exists?
-  describe "#token_exists?" do
-    subject { service.token_exists? }
-    context "when instructions have NOT been sent" do
-      it { should be_false }
-    end
-    context "when instructions have been sent" do
-      before { service.send_instructions }
-      it { should be_true }
-    end
-  end
-
-  # METHOD: token_expired?
-  describe "#token_expired?" do
-    subject { service.token_expired? }
-    context "when instructions have NOT been sent" do
-      it { should be_false }
-    end
-    context "when instructions have been sent" do
-      before { service.send_instructions } 
-      context "and have since expired" do
-        before { Timecop.freeze(user.password_reset_token_expires_at + 1.minute) }
-        after { Timecop.return }
-        it { should be_true }
-      end
-      context "and have NOT expired" do
-        before { Timecop.freeze(user.password_reset_token_expires_at - 1.minute) }
-        after { Timecop.return }
-        it { should be_false }
-      end
     end
   end
   
@@ -79,10 +46,13 @@ describe PasswordResetService do
     context "when instructions have been sent" do
       before { service.send_instructions }
       context "and have since expired" do
-        before { user.password_reset_token_expires_at = 1.hour.ago }
+        before { Timecop.freeze(service.token.expires_at + 1.minute) }
+        after { Timecop.return }
         it { should be_false }
       end
       context "and have NOT expired" do
+        before { Timecop.freeze(service.token.expires_at - 1.minute) }
+        after { Timecop.return }
         it { should be_true }
       end
     end
@@ -98,11 +68,13 @@ describe PasswordResetService do
       it "returns true" do
         expect(result).to eq true
       end
-      it "deletes the password reset token" do
-        expect(user.reload.password_reset_token).to be_nil
+      it "updates the user's password" do
+        found_user = User.find(user.id)
+        expect(found_user.password_digest).to eq user.password_digest
       end
-      it "deletes the password reset expiry timestamp" do
-        expect(user.reload.password_reset_token_expires_at).to be_nil
+      it "deletes the password reset token" do
+        found_token = PasswordResetToken.where(id: service.token.id).first
+        expect(found_token).to be_nil
       end
       it "sends password reset success message to the user's email address" do
         expect(ActionMailer::Base.deliveries.last.to).to eq [user.email]
@@ -114,11 +86,13 @@ describe PasswordResetService do
       it "returns false" do
         expect(result).to eq false
       end
-      it "retains the password reset token" do
-        expect(user.reload.password_reset_token).not_to be_nil
+      it "doesn't update the user's password" do
+        found_user = User.find(user.id)
+        expect(found_user.password_digest).to_not eq user.password_digest
       end
-      it "retains the password reset expiry timestamp" do
-        expect(user.reload.password_reset_token_expires_at).not_to be_nil
+      it "doesn't delete the password reset token" do
+        found_token = PasswordResetToken.where(id: service.token.id).first
+        expect(found_token).not_to be_nil
       end
     end
   end

@@ -1,4 +1,4 @@
-class Api::V1::Users::EmailVerificationsController < Api::V1::BaseController
+class Api::V1::EmailVerificationTokensController < Api::V1::BaseController
   skip_before_action :authenticate_user!, :except => [:create]
   skip_before_action :authorize_user!, :except => [:create]
   skip_after_action :verify_authorized, :except => [:create]
@@ -8,7 +8,7 @@ class Api::V1::Users::EmailVerificationsController < Api::V1::BaseController
   
   # returns whether a email verification token is still valid [200] or not found / expired [404]
   def show
-    render :json => @user, :serializer => Api::V1::Users::EmailVerificationSerializer
+    render :json => @token
   end
 
   # creates a new verification token for a specified email address
@@ -45,8 +45,9 @@ private
   def email_verification_service_from_token!
     @email_verification_service = EmailVerificationService.from_token params[:id]
     @user = @email_verification_service.user
+    @token = @email_verification_service.token
     error! :not_found, 'Email verification token is invalid' if @user.nil?
-    error! :not_found, 'Email verification token has expired' if @email_verification_service.token_expired?
+    error! :not_found, 'Email verification token has expired' if @token.expired?
   end
   
 end

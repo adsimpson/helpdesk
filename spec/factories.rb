@@ -13,6 +13,18 @@ FactoryGirl.define do
     user
   end
   
+  # password_reset_token
+  factory :password_reset_token do
+    user
+    expires_at  1.hour.from_now
+  end
+  
+  # email_verification_token
+  factory :email_verification_token do
+    user
+    expires_at  72.hours.from_now
+  end
+  
   # group
   factory :group do
     sequence(:name)  { |n| "Group #{n}" }

@@ -1,8 +1,8 @@
 class UserMailer < ActionMailer::Base
  
-  def password_reset_instructions(user, config)
-    @user, @config = user, config
-    @url  = "#{@config[:base_url]}?token=#{@user.password_reset_token}"
+  def password_reset_instructions(user, token, config)
+    @user, @token, @config = user, token, config
+    @url  = "#{@config[:base_url]}?token=#{@token.token}"
     mail(from: build_from_address, to: @user.email, subject: @config[:subject]) 
   end
 
@@ -11,9 +11,9 @@ class UserMailer < ActionMailer::Base
     mail(from: build_from_address, to: @user.email, subject: @config[:subject])
   end
 
-  def email_verification_instructions(user, config)
-    @user, @config = user, config
-    @url  = "#{@config[:base_url]}?token=#{@user.verification_token}"
+  def email_verification_instructions(user, token, config)
+    @user, @token, @config = user, token, config
+    @url  = "#{@config[:base_url]}?token=#{@token.token}"
     mail(from: build_from_address, to: @user.email, subject: @config[:subject]) 
   end
 

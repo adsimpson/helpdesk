@@ -1,4 +1,4 @@
-class Api::V1::Users::AccessTokensController < Api::V1::BaseController
+class Api::V1::AccessTokensController < Api::V1::BaseController
   skip_before_action :authenticate_user!, :only => [:create]
   skip_before_action :authorize_user!, :only => [:create]
   skip_after_action :verify_authorized
@@ -8,8 +8,8 @@ class Api::V1::Users::AccessTokensController < Api::V1::BaseController
     @user_authentication_service = UserAuthenticationService.from_email p[:email]
     error! :unauthenticated, 'Invalid credentials' unless user_authentication_service.authenticate p[:password]
     authorize_user!
-    @access_token = user_authentication_service.sign_in
-    render :json => @access_token, :serializer => Api::V1::Users::AccessTokenSerializer, :status => :created
+    @token = user_authentication_service.sign_in
+    render :json => @token, :status => :created
   end
   
   def destroy

@@ -7,14 +7,19 @@ class Api::V1::UserSerializer < Api::V1::BaseSerializer
     api_user_path(object)
   end
   
-  link :groupMemberships do
-   "#{api_user_path(object)}/groupMemberships"
+  link :groups do
+   "#{api_user_path(object)}/groups"
+  end
+
+  link :group_memberships do
+   "#{api_user_path(object)}/group_memberships"
   end
 
   # Attributes
 attributes :id, :name, :email, :role, :active, :verified, :status, :created_at, :updated_at
  
   def filter(keys)
+    puts keys
     if scope.nil?
       keys   #- [:active, :verified, :status]
     else

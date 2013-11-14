@@ -1,4 +1,4 @@
-class Api::V1::Users::PasswordResetsController < Api::V1::BaseController
+class Api::V1::PasswordResetTokensController < Api::V1::BaseController
   skip_before_action :authenticate_user!
   skip_before_action :authorize_user!
   skip_after_action :verify_authorized
@@ -8,7 +8,7 @@ class Api::V1::Users::PasswordResetsController < Api::V1::BaseController
   
   # returns whether a password reset token is still valid [200] or not found / expired [404]
   def show
-    render :json => @user, :serializer => Api::V1::Users::PasswordResetSerializer
+    render :json => @token
   end
   
   # creates a new password reset token for a specified email address
@@ -40,8 +40,9 @@ private
   def password_reset_service_from_token!
     @password_reset_service = PasswordResetService.from_token params[:id]
     @user = @password_reset_service.user
+    @token = @password_reset_service.token
     error! :not_found, 'Password reset token is invalid' if @user.nil?
-    error! :not_found, 'Password reset token has expired' if @password_reset_service.token_expired?
+    error! :not_found, 'Password reset token has expired' if @token.expired?
   end
   
 end
