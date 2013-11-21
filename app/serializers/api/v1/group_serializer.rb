@@ -3,7 +3,7 @@ class Api::V1::GroupSerializer < Api::V1::BaseSerializer
   
    # Attributes
   attributes :id, :name, :created_at, :updated_at
- 
+  
   # Collection - Sorting
   sort_attributes :id, :name, :created_at, :updated_at
   

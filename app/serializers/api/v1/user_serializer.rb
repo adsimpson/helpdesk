@@ -19,7 +19,6 @@ class Api::V1::UserSerializer < Api::V1::BaseSerializer
 attributes :id, :name, :email, :role, :active, :verified, :status, :created_at, :updated_at
  
   def filter(keys)
-    puts keys
     if scope.nil?
       keys   #- [:active, :verified, :status]
     else

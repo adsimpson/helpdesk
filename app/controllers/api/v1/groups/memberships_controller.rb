@@ -4,7 +4,7 @@ class Api::V1::Groups::MembershipsController < Api::V1::BaseController
   # returns a list of group memberships for the group
   def index
     authorize Group
-    render :json => GroupMembership.where(:group => @group)
+    render :json => @group.group_memberships
   end
   
   # returns a list of users [via group memberships] for the group

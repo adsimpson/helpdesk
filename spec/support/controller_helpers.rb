@@ -1,7 +1,7 @@
 module ControllerHelpers
   
   def stub_authentication
-    controller.stub :current_user => FactoryGirl.build_stubbed(:user)
+    controller.stub :current_user => FactoryGirl.build_stubbed(:user, role: "admin")
     controller.stub(:signed_in?).and_return(true) 
   end
   
@@ -14,7 +14,7 @@ module ControllerHelpers
   
   def sign_in(user = double("user"))
     controller.stub :current_user => user
-    controller.stub :user_authentication_service => UserAuthenticationService.new(user)
+    controller.stub :user_access_service => UserAccessService.new(user)
   end
   
   def no_sign_in
@@ -34,7 +34,15 @@ module ControllerHelpers
   def json
     @json ||= response.body
   end
-  
+
+  def resource_class
+    described_class.controller_name.classify.constantize
+  end
+
+  def resource
+    resource_class.last
+  end
+
 end
 
 RSpec.configure do |config|

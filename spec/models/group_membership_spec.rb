@@ -5,6 +5,9 @@ describe GroupMembership do
   let(:group) { FactoryGirl.create :group }
   let(:group_membership) { FactoryGirl.build :group_membership, user: user, group: group }
   
+  # factory
+  it { should have_a_valid_factory }
+  
   # associations
   it { should belong_to(:user) }
   it { should belong_to(:group) }
@@ -16,13 +19,13 @@ describe GroupMembership do
   it { should validate_existence_of(:user) }
   describe "#user_validator" do
     ["agent", "admin"].each do |valid_role|
-      it "should allow user role '#{valid_role}'" do
+      it "allows user role '#{valid_role}'" do
         user.role = valid_role
         expect(group_membership).to be_valid
       end
     end
     ["end_user"].each do |invalid_role|
-      it "should not allow user role '#{invalid_role}'" do
+      it "does not allow user role '#{invalid_role}'" do
         user.role = invalid_role
         expect(group_membership).to be_invalid
       end
@@ -42,21 +45,40 @@ describe GroupMembership do
   
   # callback: before create
   describe "#before_create" do
-    context "if user is not a member of another group" do
+    context "when user is not a member of another group" do
       before { GroupMembership.where(user: user).delete_all }
-      it "should set default = true" do
+      it "sets default = true" do
         group_membership.save
         expect(group_membership.default).to eq true
       end
     end
-    context "if user is already a member of another group" do
+    context "when user is already a member of another group" do
       before { FactoryGirl.create :group_membership, user: user }
-      it "should set default = false" do
+      it "sets default = false" do
         group_membership.save
         expect(group_membership.default).to eq false
       end
     end
   end
 
+  # callback: after_save
+  describe "#after_save" do
+    context "when user already has a default group membership" do
+      context "and default == true" do
+        it "sets 'default' on the previous default membership to false" do
+          default_group_membership = FactoryGirl.create :group_membership, user: user, default: true
+          group_membership.update_attributes(default: true)
+          expect(default_group_membership.reload.default).to eq false
+        end
+      end
+      context "and default == false" do
+        it "does not update 'default' on the previous default membership" do
+          default_group_membership = FactoryGirl.create :group_membership, user: user, default: true
+          group_membership.update_attributes(default: false)
+          expect(default_group_membership.reload.default).to eq true
+        end
+      end
+    end
+  end
 
 end

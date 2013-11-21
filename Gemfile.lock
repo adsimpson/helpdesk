@@ -67,6 +67,7 @@ GEM
     childprocess (0.3.9)
       ffi (~> 1.0, >= 1.0.11)
     diff-lcs (1.2.4)
+    docile (1.1.0)
     erubis (2.7.0)
     factory_girl (4.2.0)
       activesupport (>= 3.0.0)
@@ -138,6 +139,11 @@ GEM
       websocket (~> 1.0.4)
     shoulda-matchers (2.4.0)
       activesupport (>= 3.0.0)
+    simplecov (0.8.2)
+      docile (~> 1.1.0)
+      multi_json
+      simplecov-html (~> 0.8.0)
+    simplecov-html (0.8.0)
     sprockets (2.10.0)
       hike (~> 1.2)
       multi_json (~> 1.0)
@@ -173,6 +179,7 @@ DEPENDENCIES
   oops!
   pg (= 0.15.1)
   pundit
+  rack
   rails (= 4.0.0)
   rails-api!
   rails_12factor (= 0.0.2)
@@ -180,6 +187,7 @@ DEPENDENCIES
   rspec-rails
   selenium-webdriver (= 2.35.1)
   shoulda-matchers
+  simplecov
   sqlite3
   timecop
   validates_existence!

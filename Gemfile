@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '4.0.0'
+gem "rack"
 
 # Includes fix to enable use of Strong Parameters
 gem 'rails-api', git: 'https://github.com/rails-api/rails-api.git', branch: 'master'
@@ -31,6 +32,7 @@ group :test do
   gem 'shoulda-matchers'
   gem 'json_spec'
   gem 'timecop'
+  gem 'simplecov', :require => false
 end
 
 group :production do

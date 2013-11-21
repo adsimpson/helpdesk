@@ -4,7 +4,7 @@ class Api::V1::Organizations::UsersController < Api::V1::BaseController
   # returns a list of users for the organization
   def index
     authorize @organization
-    render :json => User.where(:organization => @organization)
+    render :json => @organization.users
   end
   
 private

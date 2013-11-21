@@ -6,6 +6,14 @@ FactoryGirl.define do
     sequence(:email) { |n| "user_#{n}@example.com"}
     password "changeme"
     password_confirmation { |u| u.password }
+    
+    factory :verified_user do
+      verified true
+    end
+  end
+  
+  factory :invalid_user, parent: :user do
+    name nil
   end
   
   # access_token
@@ -36,18 +44,33 @@ FactoryGirl.define do
   
   # group_membership
   factory :group_membership do
-    user
+    association :user, factory: :user, role: "agent"
     group
   end
   
   # organization
   factory :organization do
     sequence(:name)  { |n| "Organization #{n}" }
+    sequence(:external_id) { |n| "organization_#{n}"}
+
+    factory :organization_with_domains do
+      ignore do
+        domains_count 2
+      end
+      after(:create) do |organization, evaluator|
+        FactoryGirl.create_list(:domain, evaluator.domains_count, organization: organization)
+      end
+    end
+  end
+  
+  factory :invalid_organization, parent: :organization do
+    name nil
   end
   
   # domain
   factory :domain do
     sequence(:name)  { |n| "domain#{n}.com" }
+    organization
   end
   
 end

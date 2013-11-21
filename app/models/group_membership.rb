@@ -10,6 +10,8 @@ class GroupMembership < ActiveRecord::Base
   
   # callbacks
   before_save :set_as_user_default, on: :create
+
+  after_save :ensure_only_one_user_default
   
 private
 
@@ -22,5 +24,12 @@ private
   def set_as_user_default
     self.default = true if (self.user && self.user.groups.count == 0)
   end
-  
+
+  def ensure_only_one_user_default
+    if self.default == true 
+      other_group_memberships = self.user.group_memberships.where.not(id: self.id)
+      other_group_memberships.update_all(default: false)
+    end
+  end
+
 end

@@ -62,15 +62,15 @@ describe PasswordResetService do
   describe "#reset" do
     before { service.send_instructions }
     let(:password) { User.random_password.downcase } 
+    let(:password_confirmation) { password }
     context "with a valid / matching password & password confirmation" do
-      let(:password_confirmation) { password }
       let!(:result) { service.reset(password, password_confirmation) }
       it "returns true" do
         expect(result).to eq true
       end
       it "updates the user's password" do
         found_user = User.find(user.id)
-        expect(found_user.password_digest).to eq user.password_digest
+        expect(found_user.authenticate(password)).to eq user
       end
       it "deletes the password reset token" do
         found_token = PasswordResetToken.where(id: service.token.id).first
@@ -80,6 +80,23 @@ describe PasswordResetService do
         expect(ActionMailer::Base.deliveries.last.to).to eq [user.email]
       end
     end
+    
+    context "with a blank password" do
+      let(:password) { " " }
+      let!(:result) { service.reset(password, password_confirmation) }
+      it "returns false" do
+        expect(result).to eq false
+      end
+      it "doesn't update the user's password" do
+        found_user = User.find(user.id)
+        expect(found_user.authenticate(password)).to be_false
+      end
+      it "doesn't delete the password reset token" do
+        found_token = PasswordResetToken.where(id: service.token.id).first
+        expect(found_token).not_to be_nil
+      end
+    end
+    
     context "with a non-matching password & password confirmation" do
       let(:password_confirmation) { password.upcase }
       let!(:result) { service.reset(password, password_confirmation) }
@@ -88,7 +105,7 @@ describe PasswordResetService do
       end
       it "doesn't update the user's password" do
         found_user = User.find(user.id)
-        expect(found_user.password_digest).to_not eq user.password_digest
+        expect(found_user.authenticate(password)).to be_false
       end
       it "doesn't delete the password reset token" do
         found_token = PasswordResetToken.where(id: service.token.id).first

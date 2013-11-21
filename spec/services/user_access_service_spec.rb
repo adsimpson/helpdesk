@@ -1,8 +1,8 @@
 require 'spec_helper'
 
-describe UserAuthenticationService do
+describe UserAccessService do
   let(:user) { FactoryGirl.create :user }
-  let(:service) { UserAuthenticationService.new user } 
+  let(:service) { UserAccessService.new user } 
   
   # METHOD: authenticate 
   describe "#authenticate" do
@@ -53,7 +53,7 @@ describe UserAuthenticationService do
     before { service.sign_in }
     it "deletes the user's access token" do
       service.sign_out
-      found_access_token = AccessToken.where(id: service.access_token.id).first
+      found_access_token = AccessToken.where(id: service.token.id).first
       expect(found_access_token).to be_nil
     end
   end

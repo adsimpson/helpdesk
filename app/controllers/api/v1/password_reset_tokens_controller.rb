@@ -23,6 +23,8 @@ class Api::V1::PasswordResetTokensController < Api::V1::BaseController
   
   # updates user password - requires matching password & password confirmation to be passed in
   def update
+    error! :bad_request, 'Password must be specified' if params[:password].blank?
+    
     if @password_reset_service.reset(params[:password], params[:password_confirmation])
       render :json => {}, :status => :no_content
     else

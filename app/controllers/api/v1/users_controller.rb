@@ -18,12 +18,12 @@ class Api::V1::UsersController < Api::V1::BaseController
   
   def create
     @user = User.new
-    authorize @user
-    
+    @user.assign_attributes permitted_params
     requires_verification = EmailVerificationService.active? && !@user.verified
     @user.verified = true unless requires_verification
-     
-    if @user.update_attributes permitted_params
+    authorize @user
+ 
+    if @user.save
       EmailVerificationService.new(@user).send_instructions if requires_verification
       render :json => @user, :status => :created  
     else

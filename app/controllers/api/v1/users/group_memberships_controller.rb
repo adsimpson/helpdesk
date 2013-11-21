@@ -36,10 +36,6 @@ class Api::V1::Users::GroupMembershipsController < Api::V1::BaseController
 
   def set_default
     authorize @group_membership
-    
-    @default = @user.group_memberships.where(:default => true).first
-    @default.update_attributes(:default => false) if (@default && @default != @group_membership)
-    
     if @group_membership.update_attributes :default => true
       render :json => @group_membership, :status => :ok
     else
@@ -54,7 +50,7 @@ private
   end
   
   def load_group_membership
-    @group_membership = GroupMembership.find params[:id]
+    @group_membership = @user.group_memberships.find params[:id]
   end
   
   def permitted_params

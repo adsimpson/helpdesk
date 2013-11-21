@@ -53,8 +53,6 @@ describe User do
   # indexes
   it { should have_db_index(:email).unique(true) }
   it { should have_db_index(:organization_id) }
-  it { should have_db_index(:password_reset_token).unique(true) }
-  it { should have_db_index(:verification_token).unique(true) }
 
   # method: new
   describe ".new" do
