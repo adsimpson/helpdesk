@@ -34,7 +34,7 @@ class Api::V1::Users::GroupMembershipsController < Api::V1::BaseController
     render :json => {}, :status => :no_content
   end
 
-  def set_default
+  def make_default
     authorize @group_membership
     if @group_membership.update_attributes :default => true
       render :json => @group_membership, :status => :ok

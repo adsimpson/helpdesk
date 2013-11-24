@@ -1,25 +1,25 @@
 class UserMailer < ActionMailer::Base
  
-  def password_reset_instructions(user, token, config)
-    @user, @token, @config = user, token, config
+  def password_reset_instructions(email_address, token, config)
+    @email_address, @user, @token, @config = email_address, email_address.user, token, config
     @url  = "#{@config[:base_url]}?token=#{@token.token}"
-    mail(from: build_from_address, to: @user.email, subject: @config[:subject]) 
+    mail(from: build_from_address, to: @email_address.value, subject: @config[:subject]) 
   end
 
-  def password_reset_success(user,config)
-    @user, @config = user, config
-    mail(from: build_from_address, to: @user.email, subject: @config[:subject])
+  def password_reset_success(email_address,config)
+    @email_address, @user, @config = email_address, email_address.user, config
+    mail(from: build_from_address, to: @email_address.value, subject: @config[:subject])
   end
 
-  def email_verification_instructions(user, token, config)
-    @user, @token, @config = user, token, config
+  def email_verification_instructions(email_address, token, config)
+    @email_address, @user, @token, @config = email_address, email_address.user, token, config
     @url  = "#{@config[:base_url]}?token=#{@token.token}"
-    mail(from: build_from_address, to: @user.email, subject: @config[:subject]) 
+    mail(from: build_from_address, to: @email_address.value, subject: @config[:subject]) 
   end
 
-  def email_verification_success(user,config)
-    @user, @config = user, config
-    mail(from: build_from_address, to: @user.email, subject: @config[:subject])
+  def email_verification_success(email_address,config)
+    @email_address, @user, @config = email_address, email_address.user, config
+    mail(from: build_from_address, to: @email_address.value, subject: @config[:subject])
   end
 
 private

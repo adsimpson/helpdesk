@@ -119,10 +119,10 @@ describe Api::V1::Users::GroupMembershipsController do
 
   end
   
-  describe "#set_default" do
+  describe "#make_default" do
     let(:user) { FactoryGirl.create :user, role: "agent" }
     let!(:resource) { FactoryGirl.create :group_membership, user: user }
-    let(:action) { put :set_default, user_id: user.id, id: resource.id }
+    let(:action) { put :make_default, user_id: user.id, id: resource.id }
     
     requires_authorization :admin
     returns_http_status 200

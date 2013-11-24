@@ -8,6 +8,8 @@ describe User do
   
   # associations
   it { should belong_to(:organization) }
+  it { should have_many(:email_addresses).dependent(:delete_all) }
+  it { should accept_nested_attributes_for(:email_addresses).allow_destroy(true) }
   
   # validations
   # - name
@@ -18,13 +20,20 @@ describe User do
   it { should ensure_inclusion_of(:role).in_array(["admin", "agent", "end_user"]) }
   
   # - email
-  it { should validate_presence_of(:email) }
-  it do
-    user.save  # hack to ensure record is saved with valid password_digest before uniqueness test with new record
-    should validate_uniqueness_of(:email).case_insensitive
+  describe "#email_addresses_validator" do
+    before { user.email_addresses.delete_all }
+    it "ensures at least one email address is defined" do
+      expect(user).to be_invalid
+    end
   end
-  it { should allow_value("user@foo.COM", "A_US-ER@f.b.org", "frst.lst@foo.jp", "a+b@baz.cn").for(:email) }
-  it { should_not allow_value("user@foo,com", "user_at_foo.org", "example.user@foo.", "foo@bar_baz.com", "foo@bar+baz.com").for(:email) }
+
+  # it { should validate_presence_of(:email) }
+  # it do
+  #  user.save  # hack to ensure record is saved with valid password_digest before uniqueness test with new record
+  #  should validate_uniqueness_of(:email).case_insensitive
+  #end
+  #it { should allow_value("user@foo.COM", "A_US-ER@f.b.org", "frst.lst@foo.jp", "a+b@baz.cn").for(:email) }
+  # it { should_not allow_value("user@foo,com", "user_at_foo.org", "example.user@foo.", "foo@bar_baz.com", "foo@bar+baz.com").for(:email) }
   
   # - password
   it { should have_secure_password }
@@ -51,7 +60,7 @@ describe User do
   end
     
   # indexes
-  it { should have_db_index(:email).unique(true) }
+  # it { should have_db_index(:email).unique(true) }
   it { should have_db_index(:organization_id) }
 
   # method: new
@@ -59,7 +68,7 @@ describe User do
     subject { user }
     it { should be_valid }
     its(:active) { should be_true }
-    its(:verified) { should be_false }
+    # its(:verified) { should be_false }
     its(:role) { should eq "end_user" }
   end
 
@@ -80,23 +89,6 @@ describe User do
     end
   end
     
-  # callback: before save
-  describe "#before_save" do
-    it "downcases email" do
-      user2 = FactoryGirl.create :user, email: user.email.upcase
-      expect(user2.email).to eq user.email
-    end
-    context "if role = 'end_user' and no organisation is assigned" do
-      let(:organization) { FactoryGirl.create :organization, domains: [FactoryGirl.create(:domain)] }
-      before { user.assign_attributes(role: "end_user", organization: nil) }
-      
-      it "auto-assigns organization based on email domain" do
-        user.update_attributes(email: "user@#{organization.domains.first.name}")
-        expect(user.organization).to eq organization
-      end
-    end
-  end
-
   # callback: after save
   describe "#after_save" do
     context "if role is changed to 'end_user' when group_memberships exist" do
@@ -107,6 +99,16 @@ describe User do
       end
       it "auto-deletes all associated group_memberships" do
         expect(user.group_memberships.count).to eq 0
+      end
+    end
+    context "if role == 'end_user' and no organization is assigned" do
+      let(:organization) { FactoryGirl.create :organization_with_domains }
+      let(:email_address) { user.email_addresses.first } 
+      before { user.assign_attributes(role: "end_user", organization: nil) }
+      it "auto-assigns organization based on email domain" do
+        email_address.value = "user@#{organization.domains.first.name}"
+        user.save
+        expect(user.organization).to eq organization
       end
     end
   end

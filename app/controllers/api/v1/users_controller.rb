@@ -18,13 +18,14 @@ class Api::V1::UsersController < Api::V1::BaseController
   
   def create
     @user = User.new
-    @user.assign_attributes permitted_params
-    requires_verification = EmailVerificationService.active? && !@user.verified
-    @user.verified = true unless requires_verification
+    params = modify_email_params(permitted_params)
+    @user.assign_attributes params
     authorize @user
  
     if @user.save
-      EmailVerificationService.new(@user).send_instructions if requires_verification
+      @user.email_addresses.each do |email_address|
+        EmailVerificationService.new(email_address).send_instructions unless email_address.verified
+      end
       render :json => @user, :status => :created  
     else
       error!(:invalid_resource, @user.errors, "User has not been created")
@@ -33,7 +34,10 @@ class Api::V1::UsersController < Api::V1::BaseController
   
   def update
     authorize @user
-    if @user.update_attributes permitted_params
+    params = permitted_params
+    verified = params.delete :verified
+    if @user.update_attributes params
+      @user.email_addresses.update_all(verified: true) if verified == true
       render :json => @user, :status => :ok
     else
       error!(:invalid_resource, @user.errors, "User has not been updated")
@@ -55,5 +59,22 @@ private
   def permitted_params
     params.require(:user).permit(policy(@user).permitted_attributes)
   end
+  
+  def modify_email_params(params)
+    emails = params.has_key?(:emails) ? Array(params[:emails]) : Array(params[:email])
+    verified = !EmailVerificationService.active? || (params[:verified] == true)
+      
+    unless emails.empty?
+      params[:email_addresses_attributes] = []
+      emails.each do |email|
+        email_address = {value: email}
+        email_address.merge!(verified: true) if verified
+        params[:email_addresses_attributes] << email_address
+      end
+    end
+    [:email,:emails,:verified].each { |p| params.delete p }
+    params
+  end
+  
 
 end

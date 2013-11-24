@@ -31,12 +31,38 @@ describe Api::V1::UsersController do
   describe "#create" do
     let(:action) { post :create, user: parameters }
     let(:parameters) { FactoryGirl.attributes_for(:user) }
+    before do
+      unless parameters.nil?
+        parameters[:email] = parameters.fetch(:email_addresses_attributes)[0][:value]
+        parameters.delete :email_addresses_attributes 
+      end
+    end
     
     requires_authorization :agent, :admin
     creates_resource
     returns_http_status 201
     returns_resource_in_json_payload
-
+    
+    context "when multiple email addresses are provided" do
+      before do
+        parameters[:emails] = [ parameters[:email], "another#{parameters[:email]}", "andanother#{parameters[:email]}"  ]
+        parameters.delete :email
+        stub_authorization
+      end
+      it "multiple email addresses are linked to the user" do
+        action
+        expect(resource.email_addresses.count).to eq parameters[:emails].count
+      end
+      it "the first address is set as the user's primary email" do
+        action
+        expect(resource.primary_email_address.value).to eq parameters[:emails][0]
+      end
+      it "all email addresses are set as verified if 'verified' parameter == true" do
+        parameters[:verified] = true
+        action
+        resource.email_addresses.each { |email_address| expect(email_address.verified).to be_true }
+      end
+    end
     context "when email verification service is not active" do
       before { EmailVerificationService.stub(:active?).and_return(false) }
       it "sets the new user as verified" do
@@ -60,7 +86,7 @@ describe Api::V1::UsersController do
       end
     end
     context "when current user is an agent" do
-      let(:current_user) { FactoryGirl.create :verified_user, role: "agent" }
+      let(:current_user) { FactoryGirl.create :user, role: "agent" }
       before { parameters[:role] = "agent" }
       it "ignores the 'role' attribute and always creates an end_user" do
         sign_in current_user
@@ -91,7 +117,7 @@ describe Api::V1::UsersController do
     returns_resource_in_json_payload
     
     it "allows end_users to update themselves" do
-      resource.update_attributes(role: "end_user", verified: true)
+      resource.update_attributes(role: "end_user")
       sign_in resource
       previously_updated_at = resource.updated_at
       Timecop.travel(Time.now + 1.minute) { action }
@@ -99,7 +125,7 @@ describe Api::V1::UsersController do
     end
     context "users updating themselves" do
       before do
-        resource.update_attributes(role: "agent", verified: true)
+        resource.update_attributes(role: "agent")
         sign_in resource
       end
       it "cannot change their own 'role'" do
@@ -118,6 +144,20 @@ describe Api::V1::UsersController do
         parameters[:verified] = false
         expect { action }.to_not change { resource.reload.verified }  
       end
+    end
+    it "ignores the 'verified' parameter if set to false" do
+      stub_authorization
+      email_address = resource.primary_email_address
+      email_address.update_attributes(verified: true)
+      parameters.merge!(verified: false)
+      expect { action }.to_not change { email_address.reload.verified }
+    end
+    it "verifies all user email addresses if the 'verified' parameter if set to true" do
+      FactoryGirl.create_list :email_address, 3, user: resource
+      stub_authorization
+      parameters.merge!(verified: true)
+      action
+      resource.email_addresses.each { |email_address| expect(email_address.reload.verified).to be_true }
     end
     context "exception handling - when user doesn't exist" do
       before { resource.destroy }
@@ -145,7 +185,7 @@ describe Api::V1::UsersController do
     returns_empty_json_payload
     
     it "does not allow users to delete themselves" do
-      resource = FactoryGirl.create :verified_user, role: "admin"
+      resource = FactoryGirl.create :user, role: "admin"
       sign_in resource
       expect { action }.to_not change { resource.class.count }
     end

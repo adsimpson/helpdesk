@@ -16,8 +16,9 @@ Helpdesk::Application.routes.draw do
         scope module: :users do
           get "/groups", :to => "group_memberships#index_groups"
           resources :group_memberships, only: [:index, :show, :create, :destroy] do
-            put "/make_default" , :to => "group_memberships#set_default", :on => :member
+            put "/make_default" , :to => "group_memberships#make_default", :on => :member
           end
+          resources :email_addresses, except: [:new, :edit]
         end
       end
       

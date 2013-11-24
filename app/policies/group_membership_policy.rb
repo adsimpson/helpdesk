@@ -1,6 +1,6 @@
 class GroupMembershipPolicy < ApplicationPolicy
   
-  def set_default?
+  def make_default?
     update?
   end
   

@@ -17,10 +17,10 @@ describe Api::V1::PasswordResetTokensController do
   extend PasswordResetTokensControllerHelpers
   render_views
   let(:user) { FactoryGirl.create :user }
+  let(:email_address) { user.primary_email_address }
   
   describe "#create" do
-    let(:action) { post :create, email: user_email }
-    let(:user_email) { user.email }
+    let(:action) { post :create, email: email_address.value }
     
     does_not_require_authentication
     creates_resource
@@ -33,12 +33,12 @@ describe Api::V1::PasswordResetTokensController do
       returns_http_status 404
     end
     context "exception handling - when email is blank" do
-      let(:user_email) { " " }
+      before { email_address.value = " " }
       does_not_create_resource
       returns_http_status 400
     end
     context "exception handling - when email is not recognized" do
-      let(:user_email) { "unknown@example.com" }
+      before { email_address.value = "unknown@example.com" }
       does_not_create_resource
       returns_http_status 201
     end
@@ -46,7 +46,7 @@ describe Api::V1::PasswordResetTokensController do
   
   describe "#show" do
     let(:action) { get :show, id: resource.token }
-    let!(:resource) { FactoryGirl.create :password_reset_token, user: user }
+    let!(:resource) { FactoryGirl.create :password_reset_token, email_address: email_address }
     
     does_not_require_authentication
     does_not_modify_resource
@@ -75,7 +75,7 @@ describe Api::V1::PasswordResetTokensController do
   
   describe "#update" do
     let(:action) { put :update, id: resource.token, password: password, password_confirmation: password_confirmation }
-    let!(:resource) { FactoryGirl.create :password_reset_token, user: user }
+    let!(:resource) { FactoryGirl.create :password_reset_token, email_address: email_address }
     let(:password) { User.random_password }
     let(:password_confirmation) { password }
     

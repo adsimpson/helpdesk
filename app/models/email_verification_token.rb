@@ -6,7 +6,7 @@ class EmailVerificationToken < ActiveRecord::Base
   attr_reader :token
   
   # associations
-  belongs_to :user
+  belongs_to :email_address
  
   # callbacks
   before_create :generate_token 

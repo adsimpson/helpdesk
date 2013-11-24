@@ -46,17 +46,17 @@ describe GroupMembership do
   # callback: before create
   describe "#before_create" do
     context "when user is not a member of another group" do
-      before { GroupMembership.where(user: user).delete_all }
+      before { user.group_memberships.delete_all }
       it "sets default = true" do
         group_membership.save
-        expect(group_membership.default).to eq true
+        expect(group_membership.default).to be_true
       end
     end
     context "when user is already a member of another group" do
       before { FactoryGirl.create :group_membership, user: user }
-      it "sets default = false" do
+      it "does not set default = true" do
         group_membership.save
-        expect(group_membership.default).to eq false
+        expect(group_membership.default).to be_false
       end
     end
   end
@@ -68,14 +68,14 @@ describe GroupMembership do
         it "sets 'default' on the previous default membership to false" do
           default_group_membership = FactoryGirl.create :group_membership, user: user, default: true
           group_membership.update_attributes(default: true)
-          expect(default_group_membership.reload.default).to eq false
+          expect(default_group_membership.reload.default).to be_false
         end
       end
       context "and default == false" do
         it "does not update 'default' on the previous default membership" do
           default_group_membership = FactoryGirl.create :group_membership, user: user, default: true
           group_membership.update_attributes(default: false)
-          expect(default_group_membership.reload.default).to eq true
+          expect(default_group_membership.reload.default).to be_true
         end
       end
     end

@@ -4,13 +4,13 @@ class User < ActiveRecord::Base
   belongs_to :organization
   has_many :group_memberships, dependent: :destroy
   has_many :groups, through: :group_memberships
+  has_many :email_addresses, dependent: :delete_all
+  accepts_nested_attributes_for :email_addresses, allow_destroy: true
   
   # validations
   validates :name, presence: true, length: {maximum: 50}
   validates_inclusion_of :role, in: ["admin", "agent", "end_user"]
-  
-  VALID_EMAIL_REGEX = /\A[\w+\-.]+@[a-z\d\-]+(\.[a-z]+)*\.[a-z]+\z/i
-  validates :email, presence: true, format: { with: VALID_EMAIL_REGEX }, uniqueness: { case_sensitive: false }
+  validate :email_addresses_validator
   
   has_secure_password
   MIN_PASSWORD_LENGTH = 6
@@ -21,8 +21,7 @@ class User < ActiveRecord::Base
 
   # callbacks
   before_validation :ensure_password_is_present, on: :create 
-  before_save :update_email_lower
-  before_save :map_organization_from_domain
+  after_save :map_organization_from_domain
   after_save :delete_group_memberships_for_end_users
   
   # class methods
@@ -38,7 +37,7 @@ class User < ActiveRecord::Base
   # instance methods
   
   def role?(role)
-    self.role == role
+    self.role == role.to_s
   end
   
   def admin?
@@ -57,6 +56,18 @@ class User < ActiveRecord::Base
     self.role == "end_user"
   end
   
+  def email
+    primary_email_address.nil? ? nil : primary_email_address.value
+  end
+  
+  def verified
+    primary_email_address.nil? ? false : primary_email_address.verified
+  end
+  
+  def primary_email_address
+    self.email_addresses.where(primary: true).first
+  end
+  
 private
   
   def ensure_password_is_present
@@ -65,27 +76,27 @@ private
     end
   end
   
-  def update_email_lower
-    self.email = email.downcase
-  end
-  
   def map_organization_from_domain
     if (self.end_user? && self.organization.nil?)
       domain_name = self.email.split("@")[1]
       domain = Domain.where(name: domain_name).first
-      self.organization = domain.organization if (domain && domain.organization)
+      self.update_attributes(organization: domain.organization) if (domain && domain.organization)
     end
   end
   
   # if role changed to end_user - delete all group memberships for user
   def delete_group_memberships_for_end_users
-    GroupMembership.where(user: self).delete_all if self.end_user?
+    self.group_memberships.delete_all if self.end_user?
   end
     
   def organization_validator
     unless (self.organization.nil? || self.agent? || self.end_user? )
       errors.add(:organization, "can't be assigned unless role is 'agent' or 'end_user'") 
     end
+  end
+  
+  def email_addresses_validator
+    errors.add(:base, "User must have an email address") unless self.email_addresses.first
   end
   
 end

@@ -3,34 +3,43 @@ FactoryGirl.define do
   # user
   factory :user do
     sequence(:name)  { |n| "User #{n}" }
-    sequence(:email) { |n| "user_#{n}@example.com"}
+    sequence(:email_addresses_attributes) { |n| [{value: "user.#{n}@example.com"}]}
     password "changeme"
     password_confirmation { |u| u.password }
     
-    factory :verified_user do
-      verified true
-    end
-  end
+    #after(:build) do |user|
+    #  unless user.email_addresses.first
+    #    user.email_addresses.new({value: "#{user.name.downcase}@example.com"})
+    #  end
+    #end
+    
+ end
   
   factory :invalid_user, parent: :user do
     name nil
   end
   
-  # access_token
-  factory :access_token do
-    user
-  end
-  
-  # password_reset_token
-  factory :password_reset_token do
-    user
-    expires_at  1.hour.from_now
+  # user_email
+  factory :email_address do
+   sequence(:value) { |n| "user_#{n}@example.com"}
+   user
   end
   
   # email_verification_token
   factory :email_verification_token do
-    user
+    email_address
     expires_at  72.hours.from_now
+  end
+  
+  # access_token
+  factory :access_token do
+    email_address
+  end
+  
+  # password_reset_token
+  factory :password_reset_token do
+    email_address
+    expires_at  1.hour.from_now
   end
   
   # group

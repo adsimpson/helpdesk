@@ -2,7 +2,8 @@ require 'spec_helper'
 
 describe PasswordResetService do
   let(:user) { FactoryGirl.create :user }
-  let(:service) { PasswordResetService.new user } 
+  let(:email_address) { user.primary_email_address }
+  let(:service) { PasswordResetService.new email_address } 
   
   # CLASS METHOD: active? 
   describe ".active?" do
@@ -23,13 +24,13 @@ describe PasswordResetService do
   describe "#send_instructions" do
     before { service.send_instructions }
     it "generates & stores a new password reset token" do
-      expect(PasswordResetToken.last.user).to eq user
+      expect(PasswordResetToken.last.email_address).to eq email_address
     end
     it "sets a password reset expiry timestamp" do
       expect(PasswordResetToken.last.expires_at).to be > Time.now.utc
     end
     it "sends password reset instructions to the user's email address" do
-      expect(ActionMailer::Base.deliveries.last.to).to eq [user.email]
+      expect(ActionMailer::Base.deliveries.last.to).to eq [email_address.value]
     end
   end
   
@@ -77,23 +78,23 @@ describe PasswordResetService do
         expect(found_token).to be_nil
       end
       it "sends password reset success message to the user's email address" do
-        expect(ActionMailer::Base.deliveries.last.to).to eq [user.email]
+        expect(ActionMailer::Base.deliveries.last.to).to eq [email_address.value]
       end
     end
     
     context "with a blank password" do
       let(:password) { " " }
       let!(:result) { service.reset(password, password_confirmation) }
-      it "returns false" do
-        expect(result).to eq false
+      it "returns true" do
+        expect(result).to eq true
       end
       it "doesn't update the user's password" do
         found_user = User.find(user.id)
         expect(found_user.authenticate(password)).to be_false
       end
-      it "doesn't delete the password reset token" do
+      it "deletes the password reset token" do
         found_token = PasswordResetToken.where(id: service.token.id).first
-        expect(found_token).not_to be_nil
+        expect(found_token).to be_nil
       end
     end
     

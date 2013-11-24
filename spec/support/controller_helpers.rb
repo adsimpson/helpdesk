@@ -12,23 +12,22 @@ module ControllerHelpers
     controller.stub(:verify_authorized)
   end
   
-  def sign_in(user = double("user"))
+  def sign_in(user = double("user"), verified=true)
+    email_address = user.nil? ? nil : user.primary_email_address
+    if email_address && verified
+      email_address.update_attributes(verified: true)
+    end
     controller.stub :current_user => user
-    controller.stub :user_access_service => UserAccessService.new(user)
+    controller.stub :user_access_service => UserAccessService.new(email_address)
   end
   
   def no_sign_in
     sign_in nil
   end
   
-  def verified_user(attributes = {})
-    attributes[:verified] = true
-    FactoryGirl.build_stubbed :user, attributes
-  end
-  
-  def sign_in_as(role=nil)
-    user = role.nil? ? nil : verified_user(role: role.to_s)
-    sign_in(user)
+  def sign_in_as(role=nil, verified=true)
+    user = FactoryGirl.create :user, role: role.to_s
+    sign_in(user,verified)
   end
   
   def json

@@ -15,8 +15,7 @@ class UserPolicy < ApplicationPolicy
   end
   
   def create?
-    # apply default permissions
-    can_edit
+    default_permissions
   end
   
   def update?
@@ -25,7 +24,7 @@ class UserPolicy < ApplicationPolicy
       true
     # else apply default permissions
     else
-      can_edit
+      default_permissions
     end
   end
   
@@ -35,12 +34,14 @@ class UserPolicy < ApplicationPolicy
       false
     # else apply default permissions
     else
-      can_edit
+      default_permissions
     end
   end
   
   def permitted_attributes
-    attrs = [:name, :email, :password, :password_confirmation]
+    attrs = [:name, :password, :password_confirmation]
+    # email or emails is only permitted when creating a user
+    attrs.concat([:email, :emails => []]) if record.new_record?
     # administrators can update user roles, but not for themselves
     # administrators & agents can update other users' organizations
     # users cannot update their own active & verified status
@@ -55,7 +56,7 @@ class UserPolicy < ApplicationPolicy
 
 private
   
-  def can_edit
+  def default_permissions
     # admins can create/update/delete all user roles
     if user.admin?
       true

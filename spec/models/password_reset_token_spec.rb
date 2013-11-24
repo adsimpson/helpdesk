@@ -8,11 +8,11 @@ describe PasswordResetToken do
   it { should have_a_valid_factory }
   
   # associations
-  it { should belong_to(:user) }
+  it { should belong_to(:email_address) }
  
   # indexes
   it { should have_db_index(:token_digest).unique(true) }
-  it { should have_db_index(:user_id).unique(false) }
+  it { should have_db_index(:email_address_id).unique(false) }
   
   # callback: before_create
   describe "#before_create" do
