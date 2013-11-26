@@ -11,6 +11,7 @@ gem 'oops', :path => "../oops/"
 gem 'xibit', :path => "../xibit/"
 
 gem 'require_all'
+gem 'acts-as-taggable-on'
 gem 'pundit'
 # Github master supports Rails 4
 gem 'validates_existence', git: 'https://github.com/perfectline/validates_existence.git', branch: 'master'

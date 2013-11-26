@@ -5,6 +5,7 @@ class Organization < ActiveRecord::Base
   has_many :users, dependent: :nullify
   has_many :domains, dependent: :destroy
   accepts_nested_attributes_for :domains, allow_destroy: true
+  acts_as_taggable
  
   # validations
   validates :name, presence: true, length: {maximum: 50}, uniqueness: { case_sensitive: false }  

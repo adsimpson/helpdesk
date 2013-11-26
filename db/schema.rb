@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20131123153353) do
+ActiveRecord::Schema.define(version: 20131125172235) do
 
   create_table "access_tokens", force: true do |t|
     t.string   "token_digest",                    null: false
@@ -95,6 +95,23 @@ ActiveRecord::Schema.define(version: 20131123153353) do
 
   add_index "password_reset_tokens", ["email_address_id"], name: "index_password_reset_tokens_on_email_address_id"
   add_index "password_reset_tokens", ["token_digest"], name: "index_password_reset_tokens_on_token_digest", unique: true
+
+  create_table "taggings", force: true do |t|
+    t.integer  "tag_id"
+    t.integer  "taggable_id"
+    t.string   "taggable_type"
+    t.integer  "tagger_id"
+    t.string   "tagger_type"
+    t.string   "context",       limit: 128
+    t.datetime "created_at"
+  end
+
+  add_index "taggings", ["tag_id"], name: "index_taggings_on_tag_id"
+  add_index "taggings", ["taggable_id", "taggable_type", "context"], name: "index_taggings_on_taggable_id_and_taggable_type_and_context"
+
+  create_table "tags", force: true do |t|
+    t.string "name"
+  end
 
   create_table "users", force: true do |t|
     t.string   "name"

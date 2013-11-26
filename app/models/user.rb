@@ -6,6 +6,7 @@ class User < ActiveRecord::Base
   has_many :groups, through: :group_memberships
   has_many :email_addresses, dependent: :delete_all
   accepts_nested_attributes_for :email_addresses, allow_destroy: true
+  acts_as_taggable
   
   # validations
   validates :name, presence: true, length: {maximum: 50}

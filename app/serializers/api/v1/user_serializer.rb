@@ -16,8 +16,8 @@ class Api::V1::UserSerializer < Api::V1::BaseSerializer
   end
 
   # Attributes
-attributes :id, :name, :email, :role, :active, :verified, :status, :created_at, :updated_at
- 
+attributes :id, :name, :email, :role, :active, :verified, :status, :tags, :created_at, :updated_at
+
   def filter(keys)
     if scope.nil?
       keys   #- [:active, :verified, :status]
@@ -27,6 +27,10 @@ attributes :id, :name, :email, :role, :active, :verified, :status, :created_at, 
   end
 
   # Decorator attributes
+  def tags
+    object.tag_list
+  end
+
   def status
     !object.active ? 'suspended' : !object.verified ? 'unverified' : 'active'
   end

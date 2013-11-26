@@ -19,6 +19,10 @@ Helpdesk::Application.routes.draw do
             put "/make_default" , :to => "group_memberships#make_default", :on => :member
           end
           resources :email_addresses, except: [:new, :edit]
+          resources :tags, only: [:index, :create] do
+            put "/" , :to => "tags#update", :on => :collection
+            delete "/" , :to => "tags#destroy", :on => :collection
+          end
         end
       end
       
@@ -34,6 +38,10 @@ Helpdesk::Application.routes.draw do
       resources :organizations, except: [:new, :edit] do
         scope module: :organizations do
           resources :users, only: [:index]
+          resources :tags, only: [:index, :create] do
+            put "/" , :to => "tags#update", :on => :collection
+            delete "/" , :to => "tags#destroy", :on => :collection
+          end
         end
       end
       
