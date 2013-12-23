@@ -13,7 +13,7 @@ class EmailVerificationService
 
   def self.from_token(unencrypted_token)
     token = unencrypted_token ? EmailVerificationToken.find_by(token_digest: EmailVerificationToken.encrypt(unencrypted_token)) : nil
-    email_address = token && !token.expired? ? token.email_address : nil
+    email_address = token ? token.email_address : nil
     new(email_address, token)
   end
   

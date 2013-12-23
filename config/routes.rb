@@ -45,6 +45,16 @@ Helpdesk::Application.routes.draw do
         end
       end
       
+      resources :tickets, except: [:new, :edit] do
+        scope module: :tickets do
+          resources :comments, only: [:index, :show, :create, :update]
+          resources :tags, only: [:index, :create] do
+            put "/" , :to => "tags#update", :on => :collection
+            delete "/" , :to => "tags#destroy", :on => :collection
+          end
+        end
+      end
+
     end
     
   end

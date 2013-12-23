@@ -46,7 +46,7 @@ private
     @email_verification_service = EmailVerificationService.from_token params[:id]
     @email_address = @email_verification_service.email_address
     @token = @email_verification_service.token
-    error! :not_found, 'Email verification token is invalid' if @email_address.nil?
+    error! :not_found, 'Email verification token is invalid' if @token.nil?
     error! :not_found, 'Email verification token has expired' if @token.expired?
   end
   

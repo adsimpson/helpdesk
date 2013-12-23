@@ -22,7 +22,7 @@ class User < ActiveRecord::Base
 
   # callbacks
   before_validation :ensure_password_is_present, on: :create 
-  after_save :map_organization_from_domain
+  after_save :set_organization_from_domain
   after_save :delete_group_memberships_for_end_users
   
   # class methods
@@ -69,6 +69,13 @@ class User < ActiveRecord::Base
     self.email_addresses.where(primary: true).first
   end
   
+  def full_tag_list
+    tags = self.tag_list
+    tags.concat(self.organization.tag_list) unless self.organization.nil?
+    tags.uniq!
+    tags
+  end
+  
 private
   
   def ensure_password_is_present
@@ -77,7 +84,7 @@ private
     end
   end
   
-  def map_organization_from_domain
+  def set_organization_from_domain
     if (self.end_user? && self.organization.nil?)
       domain_name = self.email.split("@")[1]
       domain = Domain.where(name: domain_name).first

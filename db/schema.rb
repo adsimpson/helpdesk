@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20131125172235) do
+ActiveRecord::Schema.define(version: 20131209230134) do
 
   create_table "access_tokens", force: true do |t|
     t.string   "token_digest",                    null: false
@@ -112,6 +112,37 @@ ActiveRecord::Schema.define(version: 20131125172235) do
   create_table "tags", force: true do |t|
     t.string "name"
   end
+
+  create_table "ticket_comments", force: true do |t|
+    t.integer  "ticket_id",                 null: false
+    t.integer  "author_id",                 null: false
+    t.string   "body",                      null: false
+    t.boolean  "public",     default: true
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "ticket_comments", ["author_id"], name: "index_ticket_comments_on_author_id"
+  add_index "ticket_comments", ["ticket_id"], name: "index_ticket_comments_on_ticket_id"
+
+  create_table "tickets", force: true do |t|
+    t.string   "ticket_type"
+    t.string   "status",       default: "new"
+    t.string   "priority",     default: "normal"
+    t.string   "subject"
+    t.string   "external_id"
+    t.integer  "requester_id"
+    t.integer  "submitter_id"
+    t.integer  "assignee_id"
+    t.integer  "group_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "tickets", ["assignee_id"], name: "index_tickets_on_assignee_id"
+  add_index "tickets", ["group_id"], name: "index_tickets_on_group_id"
+  add_index "tickets", ["requester_id"], name: "index_tickets_on_requester_id"
+  add_index "tickets", ["submitter_id"], name: "index_tickets_on_submitter_id"
 
   create_table "users", force: true do |t|
     t.string   "name"

@@ -2,7 +2,7 @@ class EmailAddressPolicy < ApplicationPolicy
 
   def show?
     # end_users can only view their own email address records
-    record_is_for?(:current_user) ? true : user.end_user? ? false : true
+    record_is_for?(:current_user) ? true : end_user? ? false : true
   end
   
   def create?
@@ -28,7 +28,7 @@ class EmailAddressPolicy < ApplicationPolicy
     # users cannot set their own email addresses as verified
     # controller ensures primary can only be true
     attrs = [:primary]
-    attrs << :value if record.new_record?
+    attrs << :value if new_record?
     attrs << :verified unless record_is_for?(:current_user)
     attrs
   end
@@ -42,8 +42,8 @@ private
     # end_users cannot crud email addresses for anyone else
     case
       when record_is_for?(:current_user) then true
-      when user.admin? then true
-      when user.agent? then record_is_for?(:end_user)
+      when admin? then true
+      when agent? then record_is_for?(:end_user)
       else false
     end
   end

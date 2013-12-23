@@ -60,7 +60,6 @@ describe User do
   end
     
   # indexes
-  # it { should have_db_index(:email).unique(true) }
   it { should have_db_index(:organization_id) }
 
   # method: new
@@ -75,15 +74,17 @@ describe User do
   # callback: before validation
   describe "#before_validation" do
     context "if both password & password_confirmation are nil" do
-      before { user.update_attributes(password: nil, password_confirmation: nil) }
+      before { user.assign_attributes(password: nil, password_confirmation: nil) }
       it "auto-generates password" do
+        user.valid?
         expect(user.password).not_to be_nil
       end
     end
     context "if either password or password_confirmation are present" do
       let(:password) { User.random_password }
-      before { user.update_attributes(password: password, password_confirmation: password) }
+      before { user.assign_attributes(password: password, password_confirmation: password) }
       it "doesn't auto-generate password" do
+        user.valid?
         expect(user.password).to eq password
       end
     end

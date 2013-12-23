@@ -2,7 +2,7 @@ class UserPolicy < ApplicationPolicy
   
   def show?
     # end_users can only view their own user record
-    if user.end_user?
+    if end_user?
       is_current_user?
     # admins & agents can view all user records
     else
@@ -41,13 +41,13 @@ class UserPolicy < ApplicationPolicy
   def permitted_attributes
     attrs = [:name, :password, :password_confirmation]
     # email or emails is only permitted when creating a user
-    attrs.concat([:email, :emails => []]) if record.new_record?
+    attrs.concat([:email, :emails => []]) if new_user?
     # administrators can update user roles, but not for themselves
     # administrators & agents can update other users' organizations
     # users cannot update their own active & verified status
     unless is_current_user?
-      attrs << :role if user.admin?
-      attrs << :organization_id if user.admin? || user.agent?
+      attrs << :role if admin?
+      attrs << :organization_id if admin? || agent?
       attrs << :active
       attrs << :verified
     end
@@ -58,15 +58,19 @@ private
   
   def default_permissions
     # admins can create/update/delete all user roles
-    if user.admin?
+    if admin?
       true
     # agents can only create/update/delete end_users
-    elsif user.agent? && record.respond_to?(:end_user?) && record.end_user?
+    elsif agent? && record.respond_to?(:end_user?) && record.end_user?
       true
     # end_users cannot create/update/delete users
     else
       false
     end
+  end
+  
+  def new_user?
+    new_record?
   end
   
   def is_current_user?

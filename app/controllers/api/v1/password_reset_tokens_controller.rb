@@ -43,7 +43,7 @@ private
     @password_reset_service = PasswordResetService.from_token params[:id]
     @user = @password_reset_service.user
     @token = @password_reset_service.token
-    error! :not_found, 'Password reset token is invalid' if @user.nil?
+    error! :not_found, 'Password reset token is invalid' if @token.nil?
     error! :not_found, 'Password reset token has expired' if @token.expired?
   end
   

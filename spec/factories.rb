@@ -82,4 +82,18 @@ FactoryGirl.define do
     organization
   end
   
+  # ticket
+  factory :ticket do
+    sequence(:subject)  { |n| "Example subject #{n}" }
+    sequence(:description)  { |n| "Example description #{n}" }
+    association :requester, factory: :user
+    association :assignee, factory: :user, role: "agent"
+  end
+
+  factory :ticket_comment do
+    ticket
+    association :author, factory: :user
+    sequence(:body)  { |n| "Example body text #{n}" }
+  end
+
 end
